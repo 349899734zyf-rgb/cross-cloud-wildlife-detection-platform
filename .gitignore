@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+.venv/
+
+# ML Models ("It's too big. Don't submit")
+*.pt
+*.pth
+*.onnx
+
+# Node.js
+node_modules/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AWS
+*.zip
+*.pem
+*.key
+credentials.json
