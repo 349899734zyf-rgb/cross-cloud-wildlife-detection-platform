@@ -12,6 +12,9 @@ venv/
 *.pth
 *.onnx
 
+# ML test folder
+test/
+
 # Node.js
 node_modules/
 dist/
