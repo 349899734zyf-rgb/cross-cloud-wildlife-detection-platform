@@ -1,0 +1,10 @@
+boto3
+torch
+torchvision
+numpy
+Pillow
+opencv-python-headless
+megadetector
+onnx2torch
+tqdm
+pyyaml
