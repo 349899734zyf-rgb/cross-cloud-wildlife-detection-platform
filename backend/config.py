@@ -21,7 +21,7 @@ DYNAMODB_SUBSCRIPTIONS_TABLE = "ecolens-subscriptions"
 LAB_ROLE_ARN = "arn:aws:iam::288515363084:role/LabRole"
 
 # --- API Gateway ---
-API_GATEWAY_URL = ""            # Fill in after creating API Gateway in Phase 2
+API_GATEWAY_URL = "https://9v88c2cbyb.execute-api.us-east-1.amazonaws.com/prod"            # Fill in after creating API Gateway in Phase 2
 
 # --- SNS ---
-SNS_TOPIC_ARN = ""              # Fill in after creating SNS topic
+SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:288515363084:ecolens-tag-alerts"              # Fill in after creating SNS topic
