@@ -1,7 +1,12 @@
 import { useState, useRef } from "react";
-import axios from "axios";
+import { getUploadUrl, uploadFileToS3 } from "../services/api";
 
-const API_URL = ""; // TODO: fill in after API Gateway is created
+async function calculateSHA256(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 function UploadPage({ user }) {
   const [files, setFiles] = useState([]);
@@ -45,22 +50,30 @@ function UploadPage({ user }) {
     setResults([]);
 
     try {
+      const uploadResults = [];
       for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
+        console.log(`Calculating checksum for: ${file.name}`);
+        const checksum = await calculateSHA256(file);
+        
+        console.log(`Getting presigned URL for: ${file.name}`);
+        const userId = user.username || user.userId || "unknown";
+        const { upload_url, file_url } = await getUploadUrl(
+          file.name,
+          file.type,
+          userId,
+          checksum
+        );
 
-        // TODO: replace with actual API call
-        // const res = await axios.post(`${API_URL}/upload`, formData, {
-        //   headers: { Authorization: `Bearer ${user.token}` }
-        // });
-        // setResults(prev => [...prev, res.data]);
+        console.log(`Uploading file to S3: ${file.name}`);
+        await uploadFileToS3(upload_url, file);
 
-        console.log(`Uploading: ${file.name} (${file.size} bytes)`);
+        uploadResults.push({ file_name: file.name, file_url, status: "success" });
       }
-      setResults([{ message: "Upload simulation complete" }]);
+      setResults(uploadResults);
       setFiles([]);
     } catch (err) {
-      setError(err.message || "Upload failed");
+      console.error(err);
+      setError(err.message || "Upload failed. A duplicate file may have been detected.");
     } finally {
       setUploading(false);
     }
@@ -81,7 +94,7 @@ function UploadPage({ user }) {
         >
           <p>📁 Drag and drop images or videos here</p>
           <p style={{ color: "var(--text-secondary)", marginTop: "0.5rem" }}>
-            Supported: JPG, PNG, GIF, MP4, AVI, MOV
+            Supported: JPG, JPEG, PNG, GIF, MP4, AVI, MOV, MKV
           </p>
           <input
             ref={inputRef}
@@ -96,7 +109,7 @@ function UploadPage({ user }) {
         {files.length > 0 && (
           <div style={{ marginTop: "1rem" }}>
             <h3>Selected Files ({files.length})</h3>
-            <ul style={{ listStyle: "none", marginTop: "0.5rem" }}>
+            <ul style={{ listStyle: "none", marginTop: "0.5rem", paddingLeft: 0 }}>
               {files.map((f, i) => (
                 <li key={i} style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0" }}>
                   <span>{f.name} ({(f.size / 1024).toFixed(1)} KB)</span>
@@ -121,7 +134,17 @@ function UploadPage({ user }) {
 
         {results.length > 0 && (
           <div className="success-msg" style={{ marginTop: "1rem" }}>
-            Upload complete! Files will be automatically tagged by ML model.
+            <h3>Upload successful!</h3>
+            <ul style={{ listStyle: "none", marginTop: "0.5rem", paddingLeft: 0 }}>
+              {results.map((r, i) => (
+                <li key={i} style={{ fontSize: "0.9rem", wordBreak: "break-all" }}>
+                  ✅ {r.file_name}
+                </li>
+              ))}
+            </ul>
+            <p style={{ fontSize: "0.85rem", marginTop: "0.5rem", color: "var(--text-secondary)" }}>
+              Files will be automatically processed by the ML model in the background.
+            </p>
           </div>
         )}
       </div>

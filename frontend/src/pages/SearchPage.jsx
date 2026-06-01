@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { SPECIES_LIST } from "../utils/species";
-import axios from "axios";
-
-const API_URL = ""; // TODO: fill in after API Gateway is created
+import { queryByTags, queryByThumbnail, queryByFile, deleteFile } from "../services/api";
 
 function SearchPage({ user }) {
   const [queryType, setQueryType] = useState("tags");
@@ -34,48 +32,65 @@ function SearchPage({ user }) {
     setResults([]);
 
     try {
-      let response;
+      let data;
 
       switch (queryType) {
         case "tags": {
-          // Build tags object: { "koala": 3, "wombat": 2 }
           const tags = {};
           tagFilters.forEach((f) => {
             if (f.species) tags[f.species] = parseInt(f.count) || 1;
           });
-          // TODO: replace with actual API call
-          // response = await axios.post(`${API_URL}/query/tags`, tags);
+          if (Object.keys(tags).length === 0) {
+            throw new Error("Please add at least one species tag filter");
+          }
           console.log("Query by tags:", tags);
-          setResults([]);
+          const res = await queryByTags(tags);
+          data = res.results || [];
           break;
         }
         case "thumbnail": {
-          // TODO: replace with actual API call
-          // response = await axios.get(`${API_URL}/query/thumbnail?url=${encodeURIComponent(thumbnailUrl)}`);
+          if (!thumbnailUrl) {
+            throw new Error("Please enter a thumbnail URL");
+          }
           console.log("Query by thumbnail URL:", thumbnailUrl);
-          setResults([]);
+          const res = await queryByThumbnail(thumbnailUrl);
+          data = res.results || [];
           break;
         }
         case "file": {
           if (!searchFile) {
-            setError("Please select a file");
-            break;
+            throw new Error("Please select an image file to query");
           }
+          console.log("Query by file:", searchFile.name);
           const formData = new FormData();
           formData.append("file", searchFile);
-          // TODO: replace with actual API call
-          // response = await axios.post(`${API_URL}/query/file`, formData);
-          console.log("Query by file:", searchFile.name);
-          setResults([]);
+          const res = await queryByFile(formData);
+          data = res.results || [];
           break;
         }
         default:
+          data = [];
           break;
+      }
+      setResults(data);
+      if (data.length === 0) {
+        setError("No matching records found");
       }
     } catch (err) {
       setError(err.message || "Search failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete(fileUrl) {
+    if (!window.confirm("Are you sure you want to delete this file? This will remove it from S3 and the database.")) return;
+    try {
+      await deleteFile(fileUrl);
+      setResults((prev) => prev.filter((item) => item.file_url !== fileUrl));
+      alert("File deleted successfully");
+    } catch (err) {
+      alert("Delete failed: " + err.message);
     }
   }
 
@@ -180,24 +195,42 @@ function SearchPage({ user }) {
 
       {/* Results */}
       {results.length > 0 && (
-        <div>
+        <div style={{ marginTop: "2rem" }}>
           <h2>Results ({results.length})</h2>
-          <div className="results-grid">
+          <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
+            💡 Click on the thumbnail to view the full-size image/video in a new tab.
+          </p>
+          <div className="results-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "1rem" }}>
             {results.map((r, i) => (
-              <div className="result-card" key={i}>
-                <img src={r.thumbnail_url} alt={r.file_name || "result"} />
-                <div className="info">
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                    {r.file_name}
-                  </div>
-                  <div className="tags">
-                    {r.tags && Object.entries(r.tags).map(([species, count]) => (
-                      <span className="tag" key={species}>
-                        {species}: {count}
-                      </span>
-                    ))}
+              <div className="result-card" key={i} style={{ border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "1rem", background: "var(--card-bg)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <a href={r.file_url} target="_blank" rel="noopener noreferrer" style={{ display: "block", textAlign: "center", marginBottom: "0.8rem" }}>
+                    <img
+                      src={r.thumbnail_url || r.file_url}
+                      alt={r.file_name || "result"}
+                      style={{ maxWidth: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "4px" }}
+                    />
+                  </a>
+                  <div className="info">
+                    <div style={{ fontSize: "0.85rem", fontWeight: "bold", wordBreak: "break-all", marginBottom: "0.5rem" }}>
+                      {r.file_name}
+                    </div>
+                    <div className="tags" style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+                      {r.tags && Object.entries(r.tags).map(([species, count]) => (
+                        <span className="tag" key={species} style={{ background: "var(--tag-bg, #e0e0e0)", padding: "0.2rem 0.4rem", borderRadius: "3px", fontSize: "0.75rem" }}>
+                          {species}: {count}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => handleDelete(r.file_url)}
+                  style={{ color: "var(--error)", marginTop: "1rem", alignSelf: "flex-end", width: "fit-content", padding: "0.3rem 0.6rem", fontSize: "0.85rem" }}
+                >
+                  🗑️ Delete
+                </button>
               </div>
             ))}
           </div>
