@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  Aussie EcoLens — Lambda functions for thumbnail generation and ML tagging.
+  S3 buckets and DynamoDB are created by the infrastructure stack and referenced here as parameters.
+  After deploying this stack, run setup_s3_triggers.sh to wire up S3 event notifications.
+
+Parameters:
+  UploadBucketName:
+    Type: String
+    Default: ecolens-uploads-288515363084
+  ThumbnailBucketName:
+    Type: String
+    Default: ecolens-thumbnails-288515363084
+  ModelBucketName:
+    Type: String
+    Default: ecolens-models-288515363084
+  FilesTableName:
+    Type: String
+    Default: ecolens-files
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, prod]
+
+Globals:
+  Function:
+    Environment:
+      Variables:
+        UPLOAD_BUCKET: !Ref UploadBucketName
+        THUMBNAIL_BUCKET: !Ref ThumbnailBucketName
+        MODEL_BUCKET: !Ref ModelBucketName
+        FILES_TABLE: !Ref FilesTableName
+
+Resources:
+
+  # -------------------------------------------------------
+  # IAM Role shared by both Lambda functions
+  # -------------------------------------------------------
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ecolens-lambda-execution-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: EcoLensLambdaPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: S3ReadUpload
+                Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${UploadBucketName}/*"
+              - Sid: S3WriteThumbnail
+                Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${ThumbnailBucketName}/*"
+              - Sid: S3ReadModel
+                Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${ModelBucketName}/*"
+              - Sid: DynamoDBReadWrite
+                Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${FilesTableName}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${FilesTableName}/index/*"
+
+  # -------------------------------------------------------
+  # Thumbnail Generator Lambda
+  # Triggered by S3 ObjectCreated events (see setup_s3_triggers.sh)
+  # -------------------------------------------------------
+  ThumbnailGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ecolens-thumbnail-generator
+      PackageType: Image
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 512
+      Timeout: 60
+    Metadata:
+      DockerTag: latest
+      DockerContext: ./lambdas/thumbnail_generator
+      Dockerfile: Dockerfile
+
+  # Allow S3 to invoke the thumbnail generator
+  ThumbnailGeneratorS3Permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ThumbnailGeneratorFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub "arn:aws:s3:::${UploadBucketName}"
+      SourceAccount: !Ref AWS::AccountId
+
+  # -------------------------------------------------------
+  # ML Tagger Lambda (Container Image — needs PyTorch)
+  # Triggered by S3 ObjectCreated events (see setup_s3_triggers.sh)
+  # -------------------------------------------------------
+  MLTaggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ecolens-ml-tagger
+      PackageType: Image
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 3008
+      Timeout: 300
+      EphemeralStorage:
+        Size: 2048   # 2 GB /tmp to cache downloaded models
+    Metadata:
+      DockerTag: latest
+      DockerContext: ./lambdas/ml_tagger
+      Dockerfile: Dockerfile
+
+  # Allow S3 to invoke the ML tagger
+  MLTaggerS3Permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt MLTaggerFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub "arn:aws:s3:::${UploadBucketName}"
+      SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  ThumbnailGeneratorArn:
+    Description: Thumbnail Generator Lambda ARN
+    Value: !GetAtt ThumbnailGeneratorFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-thumbnail-generator-arn"
+
+  MLTaggerArn:
+    Description: ML Tagger Lambda ARN
+    Value: !GetAtt MLTaggerFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-ml-tagger-arn"
+
+  LambdaRoleArn:
+    Description: Shared Lambda execution role ARN
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-lambda-role-arn"
