@@ -84,9 +84,12 @@ def load_models():
 
     if detector_model is None:
         print("Loading MegaDetector...")
-        from ultralytics import YOLO
-        detector_model = YOLO(DETECTOR_LOCAL_PATH)
-        detector_model.overrides["conf"] = DETECTION_THRESHOLD
+        detector_model = torch.hub.load(
+            "ultralytics/yolov5:v7.0", "custom",
+            path=DETECTOR_LOCAL_PATH, force_reload=False,
+            trust_repo=True
+        )
+        detector_model.conf = DETECTION_THRESHOLD
         print("MegaDetector loaded")
 
     if classifier_model is None:
@@ -112,14 +115,15 @@ def detect_animals(image, detector):
     Returns:
         list of dicts with keys: bbox (x1, y1, x2, y2), confidence
     """
-    results = detector(image, verbose=False)
+    results = detector(image)
     detections = []
 
-    for box in results[0].boxes:
-        conf = float(box.conf[0])
+    for *box, conf, _ in results.xyxy[0].cpu().numpy():
         if conf >= DETECTION_THRESHOLD:
-            x1, y1, x2, y2 = [int(v) for v in box.xyxy[0]]
-            detections.append({"bbox": [x1, y1, x2, y2], "confidence": conf})
+            detections.append({
+                "bbox": [int(b) for b in box],
+                "confidence": float(conf)
+            })
 
     print(f"Detected {len(detections)} animals")
     return detections
