@@ -2,13 +2,4 @@
 torch
 torchvision
 boto3
-numpy
 Pillow
-opencv-python-headless
-pandas
-scipy
-seaborn
-matplotlib
-tqdm
-pyyaml
-requests

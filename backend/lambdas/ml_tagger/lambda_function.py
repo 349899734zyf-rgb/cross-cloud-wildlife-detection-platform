@@ -85,9 +85,8 @@ def load_models():
     if detector_model is None:
         print("Loading MegaDetector...")
         detector_model = torch.hub.load(
-            "ultralytics/yolov5:v7.0", "custom",
-            path=DETECTOR_LOCAL_PATH, force_reload=False,
-            trust_repo=True
+            "/opt/yolov5", "custom",
+            path=DETECTOR_LOCAL_PATH, source="local"
         )
         detector_model.conf = DETECTION_THRESHOLD
         print("MegaDetector loaded")
