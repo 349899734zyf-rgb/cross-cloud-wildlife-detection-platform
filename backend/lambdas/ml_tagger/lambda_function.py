@@ -11,6 +11,9 @@ import os
 import urllib.parse
 from collections import Counter
 
+# torch.hub writes to ~/.cache by default, which is read-only in Lambda
+os.environ.setdefault("TORCH_HOME", "/tmp/torch_hub")
+
 import boto3
 import torch
 import numpy as np
