@@ -11,9 +11,6 @@ import os
 import urllib.parse
 from collections import Counter
 
-# torch.hub writes to ~/.cache by default, which is read-only in Lambda
-os.environ.setdefault("TORCH_HOME", "/tmp/torch_hub")
-
 import boto3
 import torch
 import numpy as np
@@ -87,11 +84,9 @@ def load_models():
 
     if detector_model is None:
         print("Loading MegaDetector...")
-        detector_model = torch.hub.load(
-            "ultralytics/yolov5", "custom",
-            path=DETECTOR_LOCAL_PATH, force_reload=False
-        )
-        detector_model.conf = DETECTION_THRESHOLD
+        from ultralytics import YOLO
+        detector_model = YOLO(DETECTOR_LOCAL_PATH)
+        detector_model.overrides["conf"] = DETECTION_THRESHOLD
         print("MegaDetector loaded")
 
     if classifier_model is None:
@@ -117,15 +112,14 @@ def detect_animals(image, detector):
     Returns:
         list of dicts with keys: bbox (x1, y1, x2, y2), confidence
     """
-    results = detector(image)
+    results = detector(image, verbose=False)
     detections = []
 
-    for *box, conf, cls in results.xyxy[0].cpu().numpy():
+    for box in results[0].boxes:
+        conf = float(box.conf[0])
         if conf >= DETECTION_THRESHOLD:
-            detections.append({
-                "bbox": [int(b) for b in box],
-                "confidence": float(conf)
-            })
+            x1, y1, x2, y2 = [int(v) for v in box.xyxy[0]]
+            detections.append({"bbox": [x1, y1, x2, y2], "confidence": conf})
 
     print(f"Detected {len(detections)} animals")
     return detections
@@ -178,7 +172,7 @@ def crop_and_classify(image, detections, classifier):
     return dict(species_counter)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _context):
     """
     Main Lambda handler. Processes S3 event notifications.
     """
