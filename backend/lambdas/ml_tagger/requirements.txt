@@ -1,10 +1,9 @@
-boto3
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
 torchvision
+boto3
 numpy
 Pillow
 opencv-python-headless
-megadetector
-onnx2torch
 tqdm
 pyyaml

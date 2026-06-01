@@ -17,10 +17,12 @@ from PIL import Image
 import io
 
 s3_client = boto3.client("s3")
+lambda_client = boto3.client("lambda")
 dynamodb = boto3.resource("dynamodb")
 
 THUMBNAIL_BUCKET = os.environ.get("THUMBNAIL_BUCKET", "ecolens-thumbnails-288515363084")
 FILES_TABLE = os.environ.get("FILES_TABLE", "ecolens-files")
+ML_TAGGER_FUNCTION = os.environ.get("ML_TAGGER_FUNCTION", "ecolens-ml-tagger")
 THUMBNAIL_SIZE = (128, 128)
 
 
@@ -91,6 +93,22 @@ def lambda_handler(event, context):
 
             print(f"Thumbnail created: {thumbnail_url}")
             print(f"DynamoDB record created for: {file_url}")
+
+            # Asynchronously invoke ML tagger for image files
+            if file_type == "image":
+                lambda_client.invoke(
+                    FunctionName=ML_TAGGER_FUNCTION,
+                    InvocationType="Event",
+                    Payload=json.dumps({
+                        "Records": [{
+                            "s3": {
+                                "bucket": {"name": bucket},
+                                "object": {"key": key}
+                            }
+                        }]
+                    })
+                )
+                print(f"ML tagger invoked for: {key}")
 
         except Exception as e:
             print(f"Error processing {key}: {str(e)}")
