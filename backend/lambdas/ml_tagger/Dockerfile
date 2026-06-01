@@ -1,6 +1,6 @@
 FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.12
 
-RUN dnf install -y mesa-libGL cmake gcc gcc-c++ git
+RUN dnf install -y mesa-libGL cmake gcc gcc-c++ git python3-setuptools
 
 # Bundle YOLOv5 v7.0 directly — avoids torch.hub runtime downloads and
 # eliminates surprise missing-module errors from GitHub HEAD changes.

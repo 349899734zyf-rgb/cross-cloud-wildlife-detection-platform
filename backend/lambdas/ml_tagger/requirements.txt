@@ -3,4 +3,4 @@ torch==2.5.1+cpu
 torchvision==0.20.1+cpu
 boto3
 Pillow
-setuptools
+# setuptools provided via dnf python3-setuptools
