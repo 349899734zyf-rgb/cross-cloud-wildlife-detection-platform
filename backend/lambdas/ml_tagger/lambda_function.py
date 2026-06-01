@@ -179,7 +179,8 @@ def lambda_handler(event, context):
     """
     Main Lambda handler. Processes S3 event notifications.
     """
-    detector, classifier = load_models()
+    detector = None
+    classifier = None
 
     for record in event.get("Records", []):
         bucket = record["s3"]["bucket"]["name"]
@@ -194,6 +195,9 @@ def lambda_handler(event, context):
             continue
 
         try:
+            if detector is None or classifier is None:
+                detector, classifier = load_models()
+
             # Download image from S3
             response = s3_client.get_object(Bucket=bucket, Key=key)
             image_bytes = response["Body"].read()
@@ -214,8 +218,9 @@ def lambda_handler(event, context):
             table = dynamodb.Table(FILES_TABLE)
             table.update_item(
                 Key={"file_url": file_url},
-                UpdateExpression="SET tags = :t",
-                ExpressionAttributeValues={":t": tags}
+                UpdateExpression="SET tags = :t, #status = :s",
+                ExpressionAttributeNames={"#status": "status"},
+                ExpressionAttributeValues={":t": tags, ":s": "completed"}
             )
 
             print(f"Tags updated: {tags}")

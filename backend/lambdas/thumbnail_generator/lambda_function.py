@@ -22,6 +22,29 @@ dynamodb = boto3.resource("dynamodb")
 THUMBNAIL_BUCKET = os.environ.get("THUMBNAIL_BUCKET", "ecolens-thumbnails-288515363084")
 FILES_TABLE = os.environ.get("FILES_TABLE", "ecolens-files")
 THUMBNAIL_SIZE = (128, 128)
+IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"]
+VIDEO_EXTENSIONS = [".mp4", ".avi", ".mov", ".mkv"]
+
+
+def parse_upload_key(key):
+    """
+    Parse upload keys from either:
+    - uploads/<user_id>/<file_id>/<filename>
+    - <user_id>/<filename>
+    """
+    parts = key.split("/")
+    if len(parts) >= 4 and parts[0] == "uploads":
+        return parts[1], parts[2], parts[-1]
+    if len(parts) > 1:
+        return parts[0], os.path.splitext(parts[-1])[0], parts[-1]
+    return "unknown", os.path.splitext(parts[-1])[0], parts[-1]
+
+
+def build_thumbnail_key(key, file_id):
+    parts = key.split("/")
+    if len(parts) >= 4 and parts[0] == "uploads":
+        return f"thumbnails/{parts[1]}/{file_id}.jpg"
+    return f"thumb_{key}"
 
 
 def lambda_handler(event, context):
@@ -37,12 +60,11 @@ def lambda_handler(event, context):
 
         # Skip non-image/video files
         ext = os.path.splitext(key)[1].lower()
-        if ext not in [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp",
-                       ".mp4", ".avi", ".mov", ".mkv"]:
+        if ext not in IMAGE_EXTENSIONS + VIDEO_EXTENSIONS:
             print(f"Skipping unsupported file type: {ext}")
             continue
 
-        file_type = "video" if ext in [".mp4", ".avi", ".mov", ".mkv"] else "image"
+        file_type = "video" if ext in VIDEO_EXTENSIONS else "image"
 
         try:
             # Download original file from S3
@@ -59,7 +81,8 @@ def lambda_handler(event, context):
                 thumbnail_bytes = generate_video_thumbnail(file_bytes, ext)
 
             # Upload thumbnail to S3
-            thumbnail_key = f"thumb_{key}"
+            user_id, file_id, file_name = parse_upload_key(key)
+            thumbnail_key = build_thumbnail_key(key, file_id)
             s3_client.put_object(
                 Bucket=THUMBNAIL_BUCKET,
                 Key=thumbnail_key,
@@ -70,19 +93,16 @@ def lambda_handler(event, context):
             thumbnail_url = f"https://{THUMBNAIL_BUCKET}.s3.amazonaws.com/{thumbnail_key}"
             file_url = f"https://{bucket}.s3.amazonaws.com/{key}"
 
-            # Extract user_id from key (format: <user_id>/<filename>)
-            parts = key.split("/")
-            user_id = parts[0] if len(parts) > 1 else "unknown"
-            file_name = parts[-1]
-
             # Write initial record to DynamoDB
             table = dynamodb.Table(FILES_TABLE)
             table.put_item(Item={
+                "file_id": file_id,
                 "file_url": file_url,
                 "thumbnail_url": thumbnail_url,
                 "file_type": file_type,
                 "file_checksum": checksum,
                 "tags": {},  # ML tagger will fill this
+                "status": "processing",
                 "user_id": user_id,
                 "upload_time": datetime.now(timezone.utc).isoformat(),
                 "file_name": file_name,
