@@ -9,6 +9,7 @@ Updates the tags field in DynamoDB.
 import json
 import os
 import urllib.parse
+import re
 from collections import Counter
 
 import boto3
@@ -222,8 +223,59 @@ def lambda_handler(event, context):
                 ExpressionAttributeNames={"#status": "status"},
                 ExpressionAttributeValues={":t": tags, ":s": "completed"}
             )
-
             print(f"Tags updated: {tags}")
+
+            # If this image is an extracted video frame, aggregate tags to the parent video
+            match = re.search(r"^(.*)_frame_\d{4}\.[a-zA-Z0-9]+$", key)
+            if match and tags:
+                parent_video_base = match.group(1)
+                video_extensions = [".mp4", ".avi", ".mov", ".mkv", ".wmv"]
+                for ext_candidate in video_extensions:
+                    candidate_url = f"https://{bucket}.s3.amazonaws.com/{parent_video_base}{ext_candidate}"
+                    try:
+                        response = table.get_item(Key={"file_url": candidate_url})
+                        if "Item" in response:
+                            video_item = response["Item"]
+                            video_tags = video_item.get("tags", {})
+                            
+                            # Merge tags: keep the maximum count of each species seen across frames
+                            updated_video_tags = dict(video_tags)
+                            tags_changed = False
+                            for species, count in tags.items():
+                                current_count = int(updated_video_tags.get(species, 0))
+                                if int(count) > current_count:
+                                    updated_video_tags[species] = int(count)
+                                    tags_changed = True
+                            
+                            if tags_changed:
+                                table.update_item(
+                                    Key={"file_url": candidate_url},
+                                    UpdateExpression="SET tags = :t",
+                                    ExpressionAttributeValues={":t": updated_video_tags}
+                                )
+                                print(f"Aggregated video tags: {updated_video_tags} for parent video {candidate_url}")
+                            break
+                    except Exception as video_err:
+                        print(f"Warning: Failed to aggregate tags to parent video candidate {candidate_url}: {str(video_err)}")
+
+            # Trigger email notifications for each detected species tag
+            if tags:
+                lambda_client = boto3.client("lambda")
+                for tag_name in tags.keys():
+                    try:
+                        lambda_client.invoke(
+                            FunctionName="ecolens-notification",
+                            InvocationType="Event",  # Asynchronous
+                            Payload=json.dumps({
+                                "action": "notify",
+                                "tag_name": tag_name,
+                                "file_url": file_url,
+                                "tags": tags
+                            })
+                        )
+                        print(f"Successfully triggered notification for tag: {tag_name}")
+                    except Exception as notify_err:
+                        print(f"Failed to trigger notification for tag {tag_name}: {str(notify_err)}")
 
         except Exception as e:
             print(f"Error processing {key}: {str(e)}")
