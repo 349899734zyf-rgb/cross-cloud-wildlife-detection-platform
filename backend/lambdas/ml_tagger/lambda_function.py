@@ -18,11 +18,13 @@ from PIL import Image
 import io
 
 s3_client = boto3.client("s3")
+lambda_client = boto3.client("lambda")
 dynamodb = boto3.resource("dynamodb")
 
 MODEL_BUCKET = os.environ.get("MODEL_BUCKET", "ecolens-models-288515363084")
 UPLOAD_BUCKET = os.environ.get("UPLOAD_BUCKET", "ecolens-uploads-288515363084")
 FILES_TABLE = os.environ.get("FILES_TABLE", "ecolens-files")
+NOTIFICATION_FUNCTION = os.environ.get("NOTIFICATION_FUNCTION", "ecolens-notification")
 
 DETECTOR_MODEL_KEY = "mdv5a.pt"
 CLASSIFIER_MODEL_KEY = "model.pt"
@@ -219,6 +221,21 @@ def lambda_handler(event, _context):
             )
 
             print(f"Tags updated: {tags}")
+
+            # Invoke notification Lambda to send SNS alerts for detected species
+            if tags:
+                parts = key.split("/")
+                user_id = parts[0] if len(parts) > 1 else "unknown"
+                lambda_client.invoke(
+                    FunctionName=NOTIFICATION_FUNCTION,
+                    InvocationType="Event",
+                    Payload=json.dumps({
+                        "file_url": file_url,
+                        "user_id": user_id,
+                        "tags": tags
+                    })
+                )
+                print(f"Notification Lambda invoked for tags: {list(tags.keys())}")
 
         except Exception as e:
             print(f"Error processing {key}: {str(e)}")
