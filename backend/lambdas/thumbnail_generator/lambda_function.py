@@ -23,6 +23,7 @@ dynamodb = boto3.resource("dynamodb")
 THUMBNAIL_BUCKET = os.environ.get("THUMBNAIL_BUCKET", "ecolens-thumbnails-288515363084")
 FILES_TABLE = os.environ.get("FILES_TABLE", "ecolens-files")
 ML_TAGGER_FUNCTION = os.environ.get("ML_TAGGER_FUNCTION", "ecolens-ml-tagger")
+VIDEO_PROCESSOR_FUNCTION = os.environ.get("VIDEO_PROCESSOR_FUNCTION", "ecolens-video-processor")
 THUMBNAIL_SIZE = (128, 128)
 
 
@@ -94,21 +95,24 @@ def lambda_handler(event, context):
             print(f"Thumbnail created: {thumbnail_url}")
             print(f"DynamoDB record created for: {file_url}")
 
-            # Asynchronously invoke ML tagger for image files
+            # Asynchronously invoke ML tagger for images, video processor for videos
+            s3_record_payload = json.dumps({
+                "Records": [{"s3": {"bucket": {"name": bucket}, "object": {"key": key}}}]
+            })
             if file_type == "image":
                 lambda_client.invoke(
                     FunctionName=ML_TAGGER_FUNCTION,
                     InvocationType="Event",
-                    Payload=json.dumps({
-                        "Records": [{
-                            "s3": {
-                                "bucket": {"name": bucket},
-                                "object": {"key": key}
-                            }
-                        }]
-                    })
+                    Payload=s3_record_payload
                 )
                 print(f"ML tagger invoked for: {key}")
+            else:
+                lambda_client.invoke(
+                    FunctionName=VIDEO_PROCESSOR_FUNCTION,
+                    InvocationType="Event",
+                    Payload=s3_record_payload
+                )
+                print(f"Video processor invoked for: {key}")
 
         except Exception as e:
             print(f"Error processing {key}: {str(e)}")
