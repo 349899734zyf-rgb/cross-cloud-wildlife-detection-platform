@@ -8,10 +8,20 @@ Updates the tags field in DynamoDB.
 import json
 import os
 import boto3
+from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 
 FILES_TABLE = os.environ.get("FILES_TABLE", "ecolens-files")
+
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            if obj % 1 == 0:
+                return int(obj)
+            return float(obj)
+        return super(DecimalEncoder, self).default(obj)
 
 
 def build_response(status_code, body):
@@ -23,7 +33,7 @@ def build_response(status_code, body):
             "Access-Control-Allow-Methods": "POST,OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
         },
-        "body": json.dumps(body),
+        "body": json.dumps(body, cls=DecimalEncoder),
     }
 
 
