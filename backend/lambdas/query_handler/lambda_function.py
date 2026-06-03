@@ -70,9 +70,11 @@ def query_by_tags(tags_filter):
         "ExpressionAttributeNames": expr_names,
         "ExpressionAttributeValues": expr_values,
     }
+    print(f"[DEBUG] query_by_tags scan_kwargs: {json.dumps(scan_kwargs)}")
 
     results = []
     response = table.scan(**scan_kwargs)
+    print(f"[DEBUG] DynamoDB scan returned {len(response.get('Items', []))} items")
     results.extend(response.get("Items", []))
 
     # Handle pagination
@@ -239,6 +241,8 @@ def lambda_handler(event, context):
                     body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
                 else:
                     body = event
+
+            print(f"[DEBUG] Parsed body for query: {body}")
 
             if path.endswith("/query/species"):
                 # Convert species-only query to tags query with count=1
