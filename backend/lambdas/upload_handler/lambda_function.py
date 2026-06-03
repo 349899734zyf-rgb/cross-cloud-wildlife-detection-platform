@@ -48,7 +48,18 @@ def lambda_handler(event, context):
     }
     """
     try:
-        body = json.loads(event.get("body", "{}"))
+        # Robust body parsing for both API Gateway Proxy Integration and Non-Proxy Integration
+        body = {}
+        if isinstance(event, dict):
+            if "body" in event:
+                body_raw = event["body"]
+                body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+            elif "body-json" in event:
+                body_raw = event["body-json"]
+                body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+            elif "file_name" in event:
+                body = event
+
         file_name = body.get("file_name")
         file_type = body.get("file_type", "application/octet-stream")
         user_id = body.get("user_id", "unknown")

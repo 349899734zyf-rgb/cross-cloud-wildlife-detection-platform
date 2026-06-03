@@ -42,10 +42,22 @@ def lambda_handler(event, context):
         ?file_url=https://bucket.s3.amazonaws.com/user/file.jpg
     """
     try:
-        # Get file_url from body or query params
-        body = json.loads(event.get("body", "{}")) if event.get("body") else {}
-        params = event.get("queryStringParameters", {}) or {}
-        file_url = body.get("file_url") or params.get("file_url")
+        # Robust body parsing for both API Gateway Proxy Integration and Non-Proxy Integration
+        body = {}
+        if isinstance(event, dict):
+            if "body" in event:
+                body_raw = event["body"]
+                body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+            elif "body-json" in event:
+                body_raw = event["body-json"]
+                body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+            else:
+                body = event
+
+        params = event.get("queryStringParameters", {}) or {} if isinstance(event, dict) else {}
+        file_url = body.get("file_url") if isinstance(body, dict) else None
+        if not file_url:
+            file_url = params.get("file_url")
 
         if not file_url:
             return build_response(400, {"error": "file_url is required"})

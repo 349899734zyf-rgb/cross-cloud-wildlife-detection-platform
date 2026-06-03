@@ -39,10 +39,21 @@ def lambda_handler(event, context):
     }
     """
     try:
-        body = json.loads(event.get("body", "{}"))
-        file_url = body.get("file_url")
-        action = body.get("action")
-        tags = body.get("tags", {})
+        # Robust body parsing for both API Gateway Proxy Integration and Non-Proxy Integration
+        body = {}
+        if isinstance(event, dict):
+            if "body" in event:
+                body_raw = event["body"]
+                body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+            elif "body-json" in event:
+                body_raw = event["body-json"]
+                body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+            else:
+                body = event
+
+        file_url = body.get("file_url") if isinstance(body, dict) else None
+        action = body.get("action") if isinstance(body, dict) else None
+        tags = body.get("tags", {}) if isinstance(body, dict) else {}
 
         if not file_url:
             return build_response(400, {"error": "file_url is required"})

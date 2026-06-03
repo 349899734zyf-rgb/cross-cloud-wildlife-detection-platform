@@ -228,11 +228,21 @@ def lambda_handler(event, context):
         print(f"Query request: {method} {path}")
 
         if path.endswith("/query/tags") or path.endswith("/query/species"):
-            body = json.loads(event.get("body", "{}"))
+            # Robust body parsing for both API Gateway Proxy Integration and Non-Proxy Integration
+            body = {}
+            if isinstance(event, dict):
+                if "body" in event:
+                    body_raw = event["body"]
+                    body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+                elif "body-json" in event:
+                    body_raw = event["body-json"]
+                    body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+                else:
+                    body = event
 
             if path.endswith("/query/species"):
                 # Convert species-only query to tags query with count=1
-                species_list = body.get("species", [])
+                species_list = body.get("species", []) if isinstance(body, dict) else []
                 body = {s: 1 for s in species_list}
 
             if not body:

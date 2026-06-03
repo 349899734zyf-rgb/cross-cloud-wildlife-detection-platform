@@ -138,8 +138,18 @@ def lambda_handler(event, context):
     Main handler. Routes based on HTTP method and action.
     """
     try:
-        method = event.get("httpMethod", "")
-        body = json.loads(event.get("body", "{}")) if event.get("body") else {}
+        method = event.get("httpMethod", "") if isinstance(event, dict) else ""
+        # Robust body parsing for both API Gateway Proxy Integration and Non-Proxy Integration
+        body = {}
+        if isinstance(event, dict):
+            if "body" in event:
+                body_raw = event["body"]
+                body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+            elif "body-json" in event:
+                body_raw = event["body-json"]
+                body = json.loads(body_raw) if isinstance(body_raw, str) else (body_raw or {})
+            else:
+                body = event
 
         # Internal invocation from ML tagger (not via API Gateway)
         if "action" in body and body["action"] == "notify":
