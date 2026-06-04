@@ -28,10 +28,13 @@ async function apiRequest(path, method = "GET", body = null) {
   const response = await fetch(`${API_BASE_URL}${path}`, options);
 
   if (!response.ok) {
-    const error = await response
+    const errBody = await response
       .json()
       .catch(() => ({ error: response.statusText }));
-    throw new Error(error.error || `API error: ${response.status}`);
+    const err = new Error(errBody.error || `API error: ${response.status}`);
+    err.status = response.status;
+    err.existingFile = errBody.existing_file || null;
+    throw err;
   }
 
   return response.json();
