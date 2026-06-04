@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { signIn, signUp, confirmSignUp } from "../services/auth";
+import { signIn, signUp, confirmSignUp, getCurrentUser } from "../services/auth";
 
 function LoginPage({ onLogin }) {
   const [mode, setMode] = useState("login"); // "login", "register", "confirm"
@@ -16,7 +16,17 @@ function LoginPage({ onLogin }) {
     setError("");
     setLoading(true);
     try {
-      const user = await signIn(email, password);
+      const result = await signIn(email, password);
+      if (!result.isSignedIn) {
+        if (result.nextStep?.signInStep === "CONFIRM_SIGN_UP") {
+          setMode("confirm");
+          setError("Please verify your email first.");
+        } else {
+          setError("Sign-in incomplete. Please try again.");
+        }
+        return;
+      }
+      const user = await getCurrentUser();
       onLogin(user);
     } catch (err) {
       setError(err.message || "Login failed");

@@ -41,6 +41,7 @@ function UploadPage({ user }) {
 
   function removeFile(index) {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    setError("");
   }
 
   async function handleUpload() {
