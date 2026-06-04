@@ -17,7 +17,7 @@ s3_client = boto3.client("s3")
 
 UPLOAD_BUCKET = os.environ.get("UPLOAD_BUCKET", "ecolens-uploads-288515363084")
 FILES_TABLE = os.environ.get("FILES_TABLE", "ecolens-files")
-FRAME_INTERVAL = int(os.environ.get("FRAME_INTERVAL", "2"))  # seconds
+FRAME_INTERVAL = int(os.environ.get("FRAME_INTERVAL", "1"))  # seconds
 
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".wmv"}
 
