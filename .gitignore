@@ -33,3 +33,7 @@ Thumbs.db
 *.pem
 *.key
 credentials.json
+
+# Firebase (using Cloud Run instead)
+frontend/firebase.json
+.firebaserc
