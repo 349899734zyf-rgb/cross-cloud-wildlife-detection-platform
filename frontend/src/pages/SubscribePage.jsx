@@ -9,8 +9,12 @@ function SubscribePage({ user }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const userId = user?.username || user?.userId || "unknown";
-  const userEmail = user?.email || user?.attributes?.email || "";
+  const userId = user?.userId || user?.username || "unknown";
+  const userEmail =
+    user?.signInDetails?.loginId ||
+    user?.email ||
+    user?.attributes?.email ||
+    "";
 
   useEffect(() => {
     if (userId !== "unknown") {
@@ -45,9 +49,11 @@ function SubscribePage({ user }) {
       await subscribe(userId, userEmail, selectedSpecies);
       setSubscriptions((prev) => [
         ...prev,
-        { tag_name: selectedSpecies, email: userEmail },
+        { tag_name: selectedSpecies, email: userEmail }
       ]);
-      setSuccess(`Subscribed to ${selectedSpecies}. Please check your email for the AWS SNS confirmation message!`);
+      setSuccess(
+        `Subscribed to ${selectedSpecies}. Please check your email for the AWS SNS confirmation message!`
+      );
       setSelectedSpecies("");
     } catch (err) {
       setError(err.message || "Failed to subscribe");
@@ -82,7 +88,8 @@ function SubscribePage({ user }) {
           Subscribe to Species Alerts
         </h2>
         <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
-          Get notified via email when a subscribed species is detected in a new upload.
+          Get notified via email when a subscribed species is detected in a new
+          upload.
         </p>
 
         <form
@@ -103,13 +110,24 @@ function SubscribePage({ user }) {
               ))}
             </select>
           </div>
-          <button className="btn btn-primary" disabled={loading || !selectedSpecies}>
+          <button
+            className="btn btn-primary"
+            disabled={loading || !selectedSpecies}
+          >
             {loading ? "..." : "Subscribe"}
           </button>
         </form>
 
-        {error && <div className="error-msg" style={{ marginTop: "1rem" }}>{error}</div>}
-        {success && <div className="success-msg" style={{ marginTop: "1rem" }}>{success}</div>}
+        {error && (
+          <div className="error-msg" style={{ marginTop: "1rem" }}>
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="success-msg" style={{ marginTop: "1rem" }}>
+            {success}
+          </div>
+        )}
       </div>
 
       {/* Current subscriptions */}
@@ -120,10 +138,13 @@ function SubscribePage({ user }) {
 
         {subscriptions.length === 0 ? (
           <p style={{ color: "var(--text-secondary)" }}>
-            No active subscriptions. Subscribe to a species above to receive alerts.
+            No active subscriptions. Subscribe to a species above to receive
+            alerts.
           </p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+          >
             {subscriptions.map((sub) => {
               const speciesInfo = SPECIES_LIST.find(
                 (s) => s.value === sub.tag_name
@@ -138,7 +159,7 @@ function SubscribePage({ user }) {
                     padding: "0.8rem",
                     background: "var(--bg)",
                     borderRadius: "var(--radius)",
-                    border: "1px solid var(--border)",
+                    border: "1px solid var(--border)"
                   }}
                 >
                   <div>
@@ -146,7 +167,7 @@ function SubscribePage({ user }) {
                     <div
                       style={{
                         fontSize: "0.8rem",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-secondary)"
                       }}
                     >
                       {sub.tag_name}

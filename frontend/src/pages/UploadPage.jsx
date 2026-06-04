@@ -54,9 +54,9 @@ function UploadPage({ user }) {
       for (const file of files) {
         console.log(`Calculating checksum for: ${file.name}`);
         const checksum = await calculateSHA256(file);
-        
+
         console.log(`Getting presigned URL for: ${file.name}`);
-        const userId = user.username || user.userId || "unknown";
+        const userId = user.userId || user.username || "unknown";
         const { upload_url, file_url } = await getUploadUrl(
           file.name,
           file.type,
@@ -67,13 +67,19 @@ function UploadPage({ user }) {
         console.log(`Uploading file to S3: ${file.name}`);
         await uploadFileToS3(upload_url, file);
 
-        uploadResults.push({ file_name: file.name, file_url, status: "success" });
+        uploadResults.push({
+          file_name: file.name,
+          file_url,
+          status: "success"
+        });
       }
       setResults(uploadResults);
       setFiles([]);
     } catch (err) {
       console.error(err);
-      setError(err.message || "Upload failed. A duplicate file may have been detected.");
+      setError(
+        err.message || "Upload failed. A duplicate file may have been detected."
+      );
     } finally {
       setUploading(false);
     }
@@ -109,11 +115,25 @@ function UploadPage({ user }) {
         {files.length > 0 && (
           <div style={{ marginTop: "1rem" }}>
             <h3>Selected Files ({files.length})</h3>
-            <ul style={{ listStyle: "none", marginTop: "0.5rem", paddingLeft: 0 }}>
+            <ul
+              style={{ listStyle: "none", marginTop: "0.5rem", paddingLeft: 0 }}
+            >
               {files.map((f, i) => (
-                <li key={i} style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0" }}>
-                  <span>{f.name} ({(f.size / 1024).toFixed(1)} KB)</span>
-                  <span style={{ color: "var(--error)", cursor: "pointer" }} onClick={() => removeFile(i)}>
+                <li
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "0.3rem 0"
+                  }}
+                >
+                  <span>
+                    {f.name} ({(f.size / 1024).toFixed(1)} KB)
+                  </span>
+                  <span
+                    style={{ color: "var(--error)", cursor: "pointer" }}
+                    onClick={() => removeFile(i)}
+                  >
                     Remove
                   </span>
                 </li>
@@ -135,15 +155,27 @@ function UploadPage({ user }) {
         {results.length > 0 && (
           <div className="success-msg" style={{ marginTop: "1rem" }}>
             <h3>Upload successful!</h3>
-            <ul style={{ listStyle: "none", marginTop: "0.5rem", paddingLeft: 0 }}>
+            <ul
+              style={{ listStyle: "none", marginTop: "0.5rem", paddingLeft: 0 }}
+            >
               {results.map((r, i) => (
-                <li key={i} style={{ fontSize: "0.9rem", wordBreak: "break-all" }}>
+                <li
+                  key={i}
+                  style={{ fontSize: "0.9rem", wordBreak: "break-all" }}
+                >
                   ✅ {r.file_name}
                 </li>
               ))}
             </ul>
-            <p style={{ fontSize: "0.85rem", marginTop: "0.5rem", color: "var(--text-secondary)" }}>
-              Files will be automatically processed by the ML model in the background.
+            <p
+              style={{
+                fontSize: "0.85rem",
+                marginTop: "0.5rem",
+                color: "var(--text-secondary)"
+              }}
+            >
+              Files will be automatically processed by the ML model in the
+              background.
             </p>
           </div>
         )}
