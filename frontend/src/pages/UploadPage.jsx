@@ -41,6 +41,7 @@ function UploadPage({ user }) {
 
   function removeFile(index) {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    setError("");
   }
 
   async function handleUpload() {
@@ -49,40 +50,33 @@ function UploadPage({ user }) {
     setError("");
     setResults([]);
 
-    try {
-      const uploadResults = [];
-      for (const file of files) {
-        console.log(`Calculating checksum for: ${file.name}`);
+    const uploadResults = [];
+    const userId = user.userId || user.username || "unknown";
+
+    for (const file of files) {
+      try {
         const checksum = await calculateSHA256(file);
-
-        console.log(`Getting presigned URL for: ${file.name}`);
-        const userId = user.userId || user.username || "unknown";
         const { upload_url, file_url } = await getUploadUrl(
-          file.name,
-          file.type,
-          userId,
-          checksum
+          file.name, file.type, userId, checksum
         );
-
-        console.log(`Uploading file to S3: ${file.name}`);
         await uploadFileToS3(upload_url, file);
-
-        uploadResults.push({
-          file_name: file.name,
-          file_url,
-          status: "success"
-        });
+        uploadResults.push({ file_name: file.name, file_url, status: "success" });
+      } catch (err) {
+        if (err.status === 409 && err.existingFile) {
+          uploadResults.push({
+            file_name: file.name,
+            file_url: err.existingFile,
+            status: "duplicate"
+          });
+        } else {
+          uploadResults.push({ file_name: file.name, status: "error", message: err.message });
+        }
       }
-      setResults(uploadResults);
-      setFiles([]);
-    } catch (err) {
-      console.error(err);
-      setError(
-        err.message || "Upload failed. A duplicate file may have been detected."
-      );
-    } finally {
-      setUploading(false);
     }
+
+    setResults(uploadResults);
+    setFiles([]);
+    setUploading(false);
   }
 
   return (
@@ -153,30 +147,36 @@ function UploadPage({ user }) {
         {error && <div className="error-msg">{error}</div>}
 
         {results.length > 0 && (
-          <div className="success-msg" style={{ marginTop: "1rem" }}>
-            <h3>Upload successful!</h3>
-            <ul
-              style={{ listStyle: "none", marginTop: "0.5rem", paddingLeft: 0 }}
-            >
+          <div style={{ marginTop: "1rem" }}>
+            <ul style={{ listStyle: "none", paddingLeft: 0 }}>
               {results.map((r, i) => (
-                <li
-                  key={i}
-                  style={{ fontSize: "0.9rem", wordBreak: "break-all" }}
-                >
-                  ✅ {r.file_name}
+                <li key={i} style={{ fontSize: "0.9rem", marginBottom: "0.4rem" }}>
+                  {r.status === "success" && (
+                    <span style={{ color: "var(--success, green)" }}>
+                      ✅ <strong>{r.file_name}</strong> — uploaded successfully
+                    </span>
+                  )}
+                  {r.status === "duplicate" && (
+                    <span style={{ color: "#b07d00" }}>
+                      ⚠️ <strong>{r.file_name}</strong> — already exists.{" "}
+                      <a href={r.file_url} target="_blank" rel="noopener noreferrer">
+                        View existing file
+                      </a>
+                    </span>
+                  )}
+                  {r.status === "error" && (
+                    <span style={{ color: "var(--error)" }}>
+                      ❌ <strong>{r.file_name}</strong> — {r.message}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
-            <p
-              style={{
-                fontSize: "0.85rem",
-                marginTop: "0.5rem",
-                color: "var(--text-secondary)"
-              }}
-            >
-              Files will be automatically processed by the ML model in the
-              background.
-            </p>
+            {results.some(r => r.status === "success") && (
+              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "0.5rem" }}>
+                Uploaded files will be automatically tagged by the ML model.
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { signIn, signUp, confirmSignUp } from "../services/auth";
+import { signIn, signUp, confirmSignUp, resendSignUpCode, getCurrentUser } from "../services/auth";
 
 function LoginPage({ onLogin }) {
   const [mode, setMode] = useState("login"); // "login", "register", "confirm"
@@ -16,7 +16,17 @@ function LoginPage({ onLogin }) {
     setError("");
     setLoading(true);
     try {
-      const user = await signIn(email, password);
+      const result = await signIn(email, password);
+      if (!result.isSignedIn) {
+        if (result.nextStep?.signInStep === "CONFIRM_SIGN_UP") {
+          setMode("confirm");
+          setError("Please verify your email first.");
+        } else {
+          setError("Sign-in incomplete. Please try again.");
+        }
+        return;
+      }
+      const user = await getCurrentUser();
       onLogin(user);
     } catch (err) {
       setError(err.message || "Login failed");
@@ -33,7 +43,27 @@ function LoginPage({ onLogin }) {
       await signUp(email, password, givenName, familyName);
       setMode("confirm");
     } catch (err) {
-      setError(err.message || "Registration failed");
+      // User registered before but never confirmed — go straight to confirm
+      if (err.name === "UsernameExistsException") {
+        await resendSignUpCode(email).catch(() => {});
+        setMode("confirm");
+        setError("Account already exists but is unverified. A new code has been sent.");
+      } else {
+        setError(err.message || "Registration failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    setError("");
+    setLoading(true);
+    try {
+      await resendSignUpCode(email);
+      setError("Verification code resent. Please check your email.");
+    } catch (err) {
+      setError(err.message || "Failed to resend code");
     } finally {
       setLoading(false);
     }
@@ -163,6 +193,12 @@ function LoginPage({ onLogin }) {
             <button className="btn btn-primary" disabled={loading}>
               {loading ? "Confirming..." : "Confirm"}
             </button>
+            <div className="toggle-link" style={{ marginTop: "0.75rem" }}>
+              Didn't receive it?{" "}
+              <span onClick={handleResend} style={{ cursor: "pointer" }}>
+                Resend code
+              </span>
+            </div>
           </form>
         )}
       </div>

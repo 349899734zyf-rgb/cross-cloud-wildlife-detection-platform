@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import UploadPage from "./pages/UploadPage";
 import SearchPage from "./pages/SearchPage";
@@ -55,10 +55,10 @@ function App() {
           <nav className="navbar">
             <div className="nav-brand">AussieEcoLens</div>
             <div className="nav-links">
-              <a href="/upload">Upload</a>
-              <a href="/search">Search</a>
-              <a href="/tags">Tags</a>
-              <a href="/subscribe">Subscribe</a>
+              <Link to="/upload">Upload</Link>
+              <Link to="/search">Search</Link>
+              <Link to="/tags">Tags</Link>
+              <Link to="/subscribe">Subscribe</Link>
               <button onClick={handleLogout}>Logout</button>
             </div>
           </nav>

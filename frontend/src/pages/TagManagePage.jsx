@@ -2,22 +2,34 @@ import { useState } from "react";
 import { SPECIES_LIST } from "../utils/species";
 import { addTags, removeTags } from "../services/api";
 
-function TagManagePage({ user }) {
-  const [fileUrl, setFileUrl] = useState("");
+function TagManagePage() {
+  const [fileUrls, setFileUrls] = useState([""]);
   const [action, setAction] = useState("add");
   const [tagEntries, setTagEntries] = useState([{ species: "", count: 1 }]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
+  // --- URL list management ---
+  function addUrlField() {
+    setFileUrls([...fileUrls, ""]);
+  }
+  function removeUrlField(index) {
+    setFileUrls(fileUrls.filter((_, i) => i !== index));
+  }
+  function updateUrl(index, value) {
+    const updated = [...fileUrls];
+    updated[index] = value;
+    setFileUrls(updated);
+  }
+
+  // --- Tag entries management ---
   function addEntry() {
     setTagEntries([...tagEntries, { species: "", count: 1 }]);
   }
-
   function removeEntry(index) {
     setTagEntries(tagEntries.filter((_, i) => i !== index));
   }
-
   function updateEntry(index, field, value) {
     const updated = [...tagEntries];
     updated[index][field] = value;
@@ -31,31 +43,28 @@ function TagManagePage({ user }) {
     setResult(null);
 
     try {
-      const tags = {};
-      tagEntries.forEach((entry) => {
-        if (entry.species) {
-          tags[entry.species] = parseInt(entry.count) || 1;
-        }
-      });
-
-      if (!fileUrl || Object.keys(tags).length === 0) {
-        setError("File URL and at least one tag are required");
+      const urls = fileUrls.map(u => u.trim()).filter(Boolean);
+      if (urls.length === 0) {
+        setError("At least one file URL is required");
         setLoading(false);
         return;
       }
 
-      let res;
-      if (action === "add") {
-        res = await addTags(fileUrl, tags);
-      } else {
-        res = await removeTags(fileUrl, tags);
+      const tags = {};
+      tagEntries.forEach((entry) => {
+        if (entry.species) tags[entry.species] = parseInt(entry.count) || 1;
+      });
+      if (Object.keys(tags).length === 0) {
+        setError("At least one tag is required");
+        setLoading(false);
+        return;
       }
 
-      console.log(`${action} tags for ${fileUrl}:`, tags);
-      setResult({
-        message: `Tags ${action}ed successfully`,
-        tags: res.tags || tags,
-      });
+      const res = action === "add"
+        ? await addTags(urls, tags)
+        : await removeTags(urls, tags);
+
+      setResult(res);
     } catch (err) {
       setError(err.message || "Operation failed");
     } finally {
@@ -70,46 +79,45 @@ function TagManagePage({ user }) {
       <div className="card">
         {/* Action selector */}
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
-          <button
-            className={`btn ${action === "add" ? "btn-primary" : "btn-secondary"}`}
-            onClick={() => setAction("add")}
-          >
-            Add Tags
-          </button>
-          <button
-            className={`btn ${action === "remove" ? "btn-primary" : "btn-secondary"}`}
-            onClick={() => setAction("remove")}
-          >
-            Remove Tags
-          </button>
+          {["add", "remove"].map((a) => (
+            <button
+              key={a}
+              className={`btn ${action === a ? "btn-primary" : "btn-secondary"}`}
+              onClick={() => setAction(a)}
+            >
+              {a === "add" ? "Add Tags" : "Remove Tags"}
+            </button>
+          ))}
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* File URL */}
+          {/* File URLs */}
           <div className="form-group">
-            <label>File URL</label>
-            <input
-              type="url"
-              value={fileUrl}
-              onChange={(e) => setFileUrl(e.target.value)}
-              placeholder="https://ecolens-uploads-....s3.amazonaws.com/..."
-              required
-            />
+            <label>File URLs <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>(supports multiple files)</span></label>
+            {fileUrls.map((url, index) => (
+              <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.4rem" }}>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => updateUrl(index, e.target.value)}
+                  placeholder="https://ecolens-uploads-....s3.amazonaws.com/..."
+                  style={{ flex: 1 }}
+                />
+                {fileUrls.length > 1 && (
+                  <button type="button" className="btn btn-secondary" onClick={() => removeUrlField(index)}>✕</button>
+                )}
+              </div>
+            ))}
+            <button type="button" className="btn btn-secondary" onClick={addUrlField} style={{ marginTop: "0.3rem" }}>
+              + Add Another File
+            </button>
           </div>
 
           {/* Tag entries */}
           <div style={{ marginTop: "1rem" }}>
             <label>Tags to {action}</label>
             {tagEntries.map((entry, index) => (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  marginBottom: "0.5rem",
-                  alignItems: "end",
-                }}
-              >
+              <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", alignItems: "end" }}>
                 <div style={{ flex: 2 }}>
                   <select
                     value={entry.species}
@@ -117,9 +125,7 @@ function TagManagePage({ user }) {
                   >
                     <option value="">Select species...</option>
                     {SPECIES_LIST.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
+                      <option key={s.value} value={s.value}>{s.label}</option>
                     ))}
                   </select>
                 </div>
@@ -132,33 +138,18 @@ function TagManagePage({ user }) {
                   />
                 </div>
                 {tagEntries.length > 1 && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => removeEntry(index)}
-                  >
-                    ✕
-                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={() => removeEntry(index)}>✕</button>
                 )}
               </div>
             ))}
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={addEntry}
-              style={{ marginTop: "0.5rem" }}
-            >
+            <button type="button" className="btn btn-secondary" onClick={addEntry} style={{ marginTop: "0.5rem" }}>
               + Add Another Tag
             </button>
           </div>
 
           {error && <div className="error-msg">{error}</div>}
 
-          <button
-            className="btn btn-primary"
-            style={{ marginTop: "1rem" }}
-            disabled={loading}
-          >
+          <button className="btn btn-primary" style={{ marginTop: "1rem" }} disabled={loading}>
             {loading ? "Processing..." : `${action === "add" ? "Add" : "Remove"} Tags`}
           </button>
         </form>
@@ -166,9 +157,23 @@ function TagManagePage({ user }) {
         {result && (
           <div className="success-msg" style={{ marginTop: "1rem" }}>
             <div>{result.message}</div>
-            <pre style={{ marginTop: "0.5rem", fontSize: "0.85rem", background: "rgba(0,0,0,0.05)", padding: "0.5rem", borderRadius: "3px" }}>
-              {JSON.stringify(result.tags, null, 2)}
-            </pre>
+            {result.updated && result.updated.length > 0 && (
+              <div style={{ marginTop: "0.5rem" }}>
+                {result.updated.map((item, i) => (
+                  <div key={i} style={{ fontSize: "0.85rem", marginTop: "0.3rem" }}>
+                    <span style={{ wordBreak: "break-all" }}>✅ {item.file_url.split("/").pop()}</span>
+                    <pre style={{ background: "rgba(0,0,0,0.05)", padding: "0.3rem 0.5rem", borderRadius: "3px", marginTop: "0.2rem" }}>
+                      {JSON.stringify(item.tags, null, 2)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
+            {result.not_found && result.not_found.length > 0 && (
+              <div style={{ marginTop: "0.5rem", color: "var(--error)", fontSize: "0.85rem" }}>
+                Not found: {result.not_found.length} file(s)
+              </div>
+            )}
           </div>
         )}
       </div>

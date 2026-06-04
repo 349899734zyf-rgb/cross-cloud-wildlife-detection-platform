@@ -12,6 +12,9 @@ venv/
 *.pth
 *.onnx
 
+# ML test folder
+test/
+
 # Node.js
 node_modules/
 dist/
@@ -30,3 +33,7 @@ Thumbs.db
 *.pem
 *.key
 credentials.json
+
+# Firebase (using Cloud Run instead)
+frontend/firebase.json
+.firebaserc

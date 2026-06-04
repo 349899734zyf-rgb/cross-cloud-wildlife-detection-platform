@@ -28,10 +28,13 @@ async function apiRequest(path, method = "GET", body = null) {
   const response = await fetch(`${API_BASE_URL}${path}`, options);
 
   if (!response.ok) {
-    const error = await response
+    const errBody = await response
       .json()
       .catch(() => ({ error: response.statusText }));
-    throw new Error(error.error || `API error: ${response.status}`);
+    const err = new Error(errBody.error || `API error: ${response.status}`);
+    err.status = response.status;
+    err.existingFile = errBody.existing_file || null;
+    throw err;
   }
 
   return response.json();
@@ -99,27 +102,25 @@ export async function queryByFile(formData) {
 }
 
 // --- Tags ---
+// urls: string (single) or string[] (bulk)
+// operation: 1 = add, 0 = remove
 
-export async function addTags(fileUrl, tags) {
-  return apiRequest("/tags", "POST", {
-    file_url: fileUrl,
-    action: "add",
-    tags
-  });
+export async function addTags(urls, tags) {
+  const urlList = Array.isArray(urls) ? urls : [urls];
+  return apiRequest("/tags", "POST", { urls: urlList, tags, operation: 1 });
 }
 
-export async function removeTags(fileUrl, tags) {
-  return apiRequest("/tags", "POST", {
-    file_url: fileUrl,
-    action: "remove",
-    tags
-  });
+export async function removeTags(urls, tags) {
+  const urlList = Array.isArray(urls) ? urls : [urls];
+  return apiRequest("/tags", "POST", { urls: urlList, tags, operation: 0 });
 }
 
 // --- Files ---
+// urls: string (single) or string[] (bulk)
 
-export async function deleteFile(fileUrl) {
-  return apiRequest("/files", "DELETE", { file_url: fileUrl });
+export async function deleteFile(urls) {
+  const urlList = Array.isArray(urls) ? urls : [urls];
+  return apiRequest("/files", "DELETE", { urls: urlList });
 }
 
 // --- Subscriptions ---
