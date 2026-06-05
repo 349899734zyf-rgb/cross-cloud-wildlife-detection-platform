@@ -1,129 +1,217 @@
 """
-GCP Cloud Function – Cognito Token Authenticator & Secondary Processing
+GCP Cloud Function — EcoLens Notification Service
 
-Verifies the AWS Cognito ID/Access Token sent from the React frontend.
-Fulfills the multi-cloud authentication and processing requirement.
+Handles:
+  - JWT verification (from AWS Cognito)
+  - Tag subscription management (stored in GCP Firestore)
+  - Email notifications when species are detected (via SendGrid)
+  - Called by AWS ml_tagger after ML tagging completes
+
+Routes (all require Authorization: Bearer <CognitoJWT> except /notify):
+  POST   /subscribe   — subscribe to a species tag
+  DELETE /subscribe   — unsubscribe from a species tag
+  GET    /subscribe   — list subscriptions for a user
+  POST   /notify      — internal: called by AWS Lambda to trigger emails
 """
 
 import json
+import os
 import jwt
 import requests
 from jwt.algorithms import RSAAlgorithm
+from google.cloud import firestore
 
-# Configuration (In production, load these from GCP Secret Manager or Environment Variables)
+# ── Cognito config ────────────────────────────────────────────────────────────
 AWS_REGION = "us-east-1"
 USER_POOL_ID = "us-east-1_jijBmZk13"
 APP_CLIENT_ID = "1n6j3vvt3gahq48sl969fhdmls"
-
 COGNITO_JWKS_URL = f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json"
 EXPECTED_ISSUER = f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{USER_POOL_ID}"
 
-# Cache JWKS keys in memory across invocations
+# ── SendGrid config ───────────────────────────────────────────────────────────
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@aussie-ecolens.app")
+
+# ── Firestore ─────────────────────────────────────────────────────────────────
+db = firestore.Client()
+SUBSCRIPTIONS_COL = "subscriptions"  # document id: {user_id}_{tag_name}
+
+# ── JWKS cache ────────────────────────────────────────────────────────────────
 cached_jwks = None
+
+# ── CORS headers ─────────────────────────────────────────────────────────────
+CORS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+}
+
+
+def cors_preflight():
+    return ("", 204, CORS)
+
+
+def json_response(status, body):
+    return (json.dumps(body), status, {**CORS, "Content-Type": "application/json"})
+
+
+# ── JWT verification ──────────────────────────────────────────────────────────
 
 def get_jwks():
     global cached_jwks
-    if cached_jwks is None:
-        try:
-            response = requests.get(COGNITO_JWKS_URL, timeout=5)
-            response.raise_for_status()
-            cached_jwks = response.json()
-        except Exception as e:
-            print(f"Error fetching JWKS from Cognito: {e}")
-            raise e
+    if not cached_jwks:
+        resp = requests.get(COGNITO_JWKS_URL, timeout=5)
+        resp.raise_for_status()
+        cached_jwks = resp.json()
     return cached_jwks
 
+
 def verify_token(token):
-    """
-    Decodes and validates the AWS Cognito JWT Token using Cognito JWKS.
-    """
     try:
-        # 1. Unverified header to find kid
         headers = jwt.get_unverified_header(token)
         kid = headers.get("kid")
-        if not kid:
-            return False, "Token missing 'kid' header claim"
-
-        # 2. Get Cognito Public Keys
         jwks = get_jwks()
         public_key = None
         for key in jwks.get("keys", []):
             if key.get("kid") == kid:
                 public_key = RSAAlgorithm.from_jwk(json.dumps(key))
                 break
-
         if not public_key:
-            return False, "Public key not found for matching 'kid'"
-
-        # 3. Decode and verify signature & claims
+            return None, "Public key not found"
         decoded = jwt.decode(
-            token,
-            public_key,
+            token, public_key,
             algorithms=["RS256"],
             audience=APP_CLIENT_ID,
             issuer=EXPECTED_ISSUER,
-            options={"verify_aud": True, "verify_iss": True, "verify_exp": True}
         )
-        return True, decoded
-
+        return decoded, None
     except jwt.ExpiredSignatureError:
-        return False, "Token has expired"
-    except jwt.InvalidIssuerError:
-        return False, "Token has invalid issuer"
-    except jwt.InvalidAudienceError:
-        return False, "Token has invalid audience"
+        return None, "Token expired"
     except Exception as e:
-        return False, f"Token verification failed: {str(e)}"
+        return None, str(e)
+
+
+def get_claims(request):
+    """Extract and verify Cognito JWT, return claims or None."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None, "Missing token"
+    token = auth.split(" ", 1)[1]
+    return verify_token(token)
+
+
+# ── Firestore helpers ─────────────────────────────────────────────────────────
+
+def doc_id(user_id, tag_name):
+    return f"{user_id}__{tag_name}"
+
+
+def subscribe_user(user_id, email, tag_name):
+    db.collection(SUBSCRIPTIONS_COL).document(doc_id(user_id, tag_name)).set({
+        "user_id": user_id,
+        "email": email,
+        "tag_name": tag_name,
+    })
+
+
+def unsubscribe_user(user_id, tag_name):
+    db.collection(SUBSCRIPTIONS_COL).document(doc_id(user_id, tag_name)).delete()
+
+
+def get_subscriptions(user_id):
+    docs = db.collection(SUBSCRIPTIONS_COL).where("user_id", "==", user_id).stream()
+    return [d.to_dict() for d in docs]
+
+
+def get_subscribers_for_tag(tag_name):
+    docs = db.collection(SUBSCRIPTIONS_COL).where("tag_name", "==", tag_name).stream()
+    return [d.to_dict() for d in docs]
+
+
+# ── Email via SendGrid ────────────────────────────────────────────────────────
+
+def send_email(to_email, species, file_url, all_tags):
+    if not SENDGRID_API_KEY:
+        print(f"[NOTIFY] No SendGrid key — would email {to_email} about {species}")
+        return
+
+    body = {
+        "personalizations": [{"to": [{"email": to_email}]}],
+        "from": {"email": SENDER_EMAIL, "name": "AussieEcoLens"},
+        "subject": f"EcoLens Alert: {species} detected!",
+        "content": [{
+            "type": "text/plain",
+            "value": (
+                f"Hi,\n\n"
+                f"A new file containing {species} has been uploaded to AussieEcoLens.\n\n"
+                f"File URL: {file_url}\n"
+                f"All detected species: {json.dumps(all_tags, indent=2)}\n\n"
+                f"Log in to view the file.\n\n"
+                f"— AussieEcoLens Team"
+            )
+        }]
+    }
+    resp = requests.post(
+        "https://api.sendgrid.com/v3/mail/send",
+        headers={"Authorization": f"Bearer {SENDGRID_API_KEY}", "Content-Type": "application/json"},
+        json=body,
+        timeout=10,
+    )
+    print(f"[NOTIFY] SendGrid response {resp.status_code} for {to_email}")
+
+
+# ── Main entry point ──────────────────────────────────────────────────────────
 
 def handle_request(request):
-    """
-    Entry point for GCP Cloud Function (HTTP Trigger).
-    """
-    # Enable CORS
     if request.method == "OPTIONS":
-        headers = {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            "Access-Control-Max-Age": "3600"
-        }
-        return ("", 204, headers)
+        return cors_preflight()
 
-    headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-    }
+    path = request.path.rstrip("/")
+    method = request.method
 
-    # Extract Authorization Header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        return (json.dumps({"error": "Unauthorized: Missing or invalid Authorization header"}), 401, headers)
+    # ── POST /notify — internal call from AWS ml_tagger (no auth required) ──
+    if path.endswith("/notify") and method == "POST":
+        data = request.get_json(silent=True) or {}
+        tags = data.get("tags", {})        # {"Felis_catus": 2, ...}
+        file_url = data.get("file_url", "")
+        total = 0
+        for tag_name in tags.keys():
+            subscribers = get_subscribers_for_tag(tag_name)
+            for sub in subscribers:
+                send_email(sub["email"], tag_name, file_url, tags)
+                total += 1
+        return json_response(200, {"notified": total})
 
-    token = auth_header.split(" ")[1]
+    # ── All other routes require valid Cognito JWT ─────────────────────────
+    claims, err = get_claims(request)
+    if not claims:
+        return json_response(401, {"error": f"Unauthorized: {err}"})
 
-    # Verify Token
-    success, result = verify_token(token)
-    if not success:
-        return (json.dumps({"error": f"Unauthorized: {result}"}), 401, headers)
-
-    # Token verified! User information is inside result dictionary
-    claims = result
-    user_email = claims.get("email", "unknown")
     user_id = claims.get("sub", "unknown")
+    user_email = claims.get("email", "")
 
-    # Perform mock secondary cloud task (e.g. log auditing, meta classification)
-    print(f"Verified AWS Cognito Token for User {user_email} (ID: {user_id})")
+    # ── GET /subscribe — list subscriptions ───────────────────────────────
+    if path.endswith("/subscribe") and method == "GET":
+        subs = get_subscriptions(user_id)
+        return json_response(200, {"subscriptions": subs, "count": len(subs)})
 
-    response_body = {
-        "status": "success",
-        "message": "Authorized successfully by secondary cloud (GCP)!",
-        "aws_cognito_claims": {
-            "user_id": user_id,
-            "email": user_email,
-            "given_name": claims.get("given_name"),
-            "family_name": claims.get("family_name")
-        },
-        "gcp_processed_at": "GCP Cloud Function (python-runtime)"
-    }
+    # ── POST /subscribe — subscribe to a tag ─────────────────────────────
+    if path.endswith("/subscribe") and method == "POST":
+        body = request.get_json(silent=True) or {}
+        tag_name = body.get("tag_name")
+        email = body.get("email") or user_email
+        if not tag_name:
+            return json_response(400, {"error": "tag_name is required"})
+        subscribe_user(user_id, email, tag_name)
+        return json_response(200, {"message": f"Subscribed to {tag_name}", "tag_name": tag_name})
 
-    return (json.dumps(response_body), 200, headers)
+    # ── DELETE /subscribe — unsubscribe ──────────────────────────────────
+    if path.endswith("/subscribe") and method == "DELETE":
+        body = request.get_json(silent=True) or {}
+        tag_name = body.get("tag_name")
+        if not tag_name:
+            return json_response(400, {"error": "tag_name is required"})
+        unsubscribe_user(user_id, tag_name)
+        return json_response(200, {"message": f"Unsubscribed from {tag_name}"})
+
+    return json_response(404, {"error": f"Unknown route: {method} {path}"})

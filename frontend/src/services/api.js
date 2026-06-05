@@ -123,23 +123,38 @@ export async function deleteFile(urls) {
   return apiRequest("/files", "DELETE", { urls: urlList });
 }
 
-// --- Subscriptions ---
+// --- Subscriptions (served by GCP Cloud Run) ---
+
+const GCP_BASE_URL = "https://aws-cognito-authenticator-524389055136.us-central1.run.app";
+
+async function gcpRequest(path, method = "GET", body = null) {
+  const token = await getAuthToken();
+  const options = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  };
+  if (body && method !== "GET") {
+    options.body = JSON.stringify(body);
+  }
+  const response = await fetch(`${GCP_BASE_URL}${path}`, options);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(err.error || `GCP error: ${response.status}`);
+  }
+  return response.json();
+}
 
 export async function subscribe(userId, email, tagName) {
-  return apiRequest("/subscribe", "POST", {
-    user_id: userId,
-    email,
-    tag_name: tagName
-  });
+  return gcpRequest("/subscribe", "POST", { user_id: userId, email, tag_name: tagName });
 }
 
 export async function unsubscribe(userId, tagName) {
-  return apiRequest("/subscribe", "DELETE", {
-    user_id: userId,
-    tag_name: tagName
-  });
+  return gcpRequest("/subscribe", "DELETE", { user_id: userId, tag_name: tagName });
 }
 
 export async function getSubscriptions(userId) {
-  return apiRequest(`/subscribe?user_id=${encodeURIComponent(userId)}`);
+  return gcpRequest(`/subscribe?user_id=${encodeURIComponent(userId)}`);
 }
