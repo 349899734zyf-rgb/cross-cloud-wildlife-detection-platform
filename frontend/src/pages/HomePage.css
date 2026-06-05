@@ -1,0 +1,257 @@
+/* ════════════════════════════════════════════
+   HomePage.css
+   ════════════════════════════════════════════ */
+
+/* ── Page shell ── */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: #f2ebda;
+  font-family: "American Typewriter", "Courier New", monospace;
+}
+
+/* ── Navbar ── */
+.home-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 36px;
+  height: 64px;
+  background: #faf7f0;
+  border-bottom: 1px solid #d4c9b0;
+  flex-shrink: 0;
+}
+
+.home-nav-logo {
+  font-size: 31px;
+  font-weight: 900;
+  color: #2a1f0e;
+}
+
+.home-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.home-nav-tagline {
+  font-size: 17px;
+  color: #6b5b3e;
+}
+
+.home-nav-btn {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 17px;
+  color: #faf7f0; /* cream text on green — good contrast */
+  background: #3a6b2a;
+  border: 1.5px solid #3a6b2a;
+  padding: 6px 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.home-nav-btn:hover {
+  background: #2d5421;
+  border-color: #2d5421;
+}
+
+/* ── Hero ── */
+.home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 0 10px;
+  flex-shrink: 0;
+}
+
+.home-hero-title {
+  font-size: 44px;
+  font-weight: 500;
+  color: #2a1f0e;
+  text-align: center;
+  font-family: "American Typewriter", "Courier New", monospace;
+}
+
+/* ── Four nav buttons ── */
+.home-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+  /* top padding = space for animal images to appear above */
+  padding: 100px 32px 0;
+  flex-shrink: 0;
+}
+
+.home-btn-wrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Animal (above button, hidden by default) */
+.home-btn-animal {
+  position: absolute;
+  bottom: calc(100% - 6px); /* just above button top edge */
+  left: 50%;
+  height: 90px;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 1;
+  transform: translateX(-50%) translateY(20px);
+  opacity: 0;
+  transition:
+    transform 0.28s ease,
+    opacity 0.28s ease;
+}
+.home-btn-wrapper:hover .home-btn-animal {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Button */
+.home-btn {
+  font-family: "American Typewriter", "Courier New", monospace;
+  position: relative;
+  z-index: 2;
+  font-size: 22px;
+  font-weight: 600;
+  color: #faf7f0; /* cream text */
+  background: #3a6b2a;
+  border: 1.5px solid #3a6b2a;
+  padding: 10px 38px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+}
+.home-btn-wrapper:hover .home-btn {
+  background: #2d5421;
+  border-color: #2d5421;
+  transform: scale(1.04);
+}
+
+/* Hint text (below button, hidden by default) */
+.home-btn-hint {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  white-space: nowrap;
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 14px;
+  color: #6b5b3e;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-4px);
+  opacity: 0;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+.home-btn-wrapper:hover .home-btn-hint {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Bottom scene ── */
+.home-scene {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+/* Trees — static, z-index 1 */
+.scene-tree {
+  position: absolute;
+  bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.tree-right {
+  right: -3%;
+  bottom: -350px;
+  height: 220%;
+  transform: scaleX(-1);
+}
+
+.tree-left {
+  left: -15%;
+  bottom: -400px;
+  height: 220%;
+}
+
+/* Sway animation */
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-animal {
+    animation: none !important;
+  }
+}
+
+/* Animals — swaying, z-index 2 */
+.scene-animal {
+  position: absolute;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  transform-origin: bottom center;
+}
+
+.animal-kangaroo {
+  left: -35%;
+  bottom: -550px;
+  height: 320%;
+  animation: sway 3.6s ease-in-out infinite;
+}
+.animal-quokka {
+  left: 18%;
+  bottom: -210px;
+  height: 130%;
+  animation: sway 4.1s ease-in-out infinite 0.6s;
+}
+.animal-ibis {
+  left: 25%;
+  bottom: -280px;
+  height: 150%;
+  animation: sway 3.9s ease-in-out infinite 1.1s;
+}
+.animal-koala {
+  right: 8%;
+  bottom: -60px;
+  height: 113%;
+  animation: sway 4.3s ease-in-out infinite 1.7s;
+}
+
+.upload-pop-animal {
+  height: 330px;
+  bottom: calc(100% - 110px);
+}
+
+.search-pop-animal {
+  height: 350px;
+  bottom: calc(100% - 130px);
+}
+
+.tags-pop-animal {
+  height: 380px;
+  bottom: calc(100% - 140px);
+}
+
+.subscribe-pop-animal {
+  height: 300px;
+  bottom: calc(100% - 110px);
+}

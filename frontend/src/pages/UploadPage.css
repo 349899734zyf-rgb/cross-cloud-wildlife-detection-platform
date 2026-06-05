@@ -1,0 +1,195 @@
+/* ════════════════════════════════════════════
+   UploadPage.css
+   ════════════════════════════════════════════ */
+
+.up-page {
+  min-height: 100vh;
+  background: #f2ebda;
+  font-family: "American Typewriter", "Courier New", monospace;
+}
+
+/* ── Body ── */
+.up-body {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 40px 60px;
+}
+
+/* ── Decorative tree ── */
+.up-deco-tree {
+  position: absolute;
+  top: -90px;
+  right: 135px;
+  height: 380px;
+  width: auto;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* ── Title ── */
+.up-title {
+  position: relative;
+  z-index: 1;
+  font-size: 34px;
+  font-weight: 700;
+  color: #2a1f0e;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* ── Card ── */
+.up-card {
+  position: relative;
+  z-index: 1;
+  background: #faf7f0;
+  border: 1px solid #d4c9b0;
+  border-radius: 8px;
+  padding: 28px 32px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+/* ── Drop zone ── */
+.up-zone {
+  border: 2px dashed #d4c9b0;
+  border-radius: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+  background: #f2ebda;
+}
+.up-zone:hover,
+.up-zone-active {
+  border-color: #3a6b2a;
+  background: #eae3d0;
+}
+
+.up-zone-icon {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.up-zone-text {
+  font-size: 17px;
+  color: #2a1f0e;
+  margin-bottom: 6px;
+}
+
+.up-zone-hint {
+  font-size: 13px;
+  color: #6b5b3e;
+}
+
+/* ── File list ── */
+.up-file-list {
+  margin-top: 20px;
+}
+
+.up-file-list-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2a1f0e;
+  margin-bottom: 10px;
+}
+
+.up-file-ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.up-file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #2a1f0e;
+  padding: 6px 10px;
+  background: #f2ebda;
+  border: 1px solid #d4c9b0;
+  border-radius: 4px;
+}
+
+.up-remove {
+  color: #c0392b;
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+.up-remove:hover {
+  text-decoration: underline;
+}
+
+/* ── Buttons ── */
+.up-btn-primary {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 17px;
+  color: #faf7f0;
+  background: #3a6b2a;
+  border: none;
+  border-radius: 4px;
+  padding: 11px 36px;
+  cursor: pointer;
+  display: block;
+  margin: 0 auto;
+  transition: background 0.2s;
+}
+.up-btn-primary:hover {
+  background: #2d5421;
+}
+.up-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Messages ── */
+.up-error {
+  font-size: 13px;
+  color: #c0392b;
+  background: #fde8e8;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 16px;
+}
+
+.up-success {
+  font-size: 13px;
+  color: #3a6b2a;
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-top: 16px;
+}
+
+.up-success-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.up-success-ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.up-success-note {
+  font-size: 12px;
+  color: #6b5b3e;
+  margin-top: 6px;
+}

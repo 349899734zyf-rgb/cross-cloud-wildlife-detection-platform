@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { SPECIES_LIST } from "../utils/species";
 import { subscribe, unsubscribe, getSubscriptions } from "../services/api";
+import Navbar from "../components/Navbar";
+import "./SubscribePage.css";
 
 function SubscribePage({ user }) {
   const [subscriptions, setSubscriptions] = useState([]);
@@ -17,18 +19,14 @@ function SubscribePage({ user }) {
     "";
 
   useEffect(() => {
-    if (userId !== "unknown") {
-      loadSubscriptions();
-    }
+    if (userId !== "unknown") loadSubscriptions();
   }, [userId]);
 
   async function loadSubscriptions() {
     try {
-      console.log("Loading subscriptions for user:", userId);
       const res = await getSubscriptions(userId);
       setSubscriptions(res.subscriptions || []);
     } catch (err) {
-      console.error("Failed to load subscriptions:", err);
       setError("Failed to load subscriptions");
     }
   }
@@ -36,23 +34,19 @@ function SubscribePage({ user }) {
   async function handleSubscribe(e) {
     e.preventDefault();
     if (!selectedSpecies) return;
-
     setLoading(true);
     setError("");
     setSuccess("");
-
     try {
-      console.log("Subscribing to:", selectedSpecies);
-      if (!userEmail) {
+      if (!userEmail)
         throw new Error("User email is required to subscribe for alerts");
-      }
       await subscribe(userId, userEmail, selectedSpecies);
       setSubscriptions((prev) => [
         ...prev,
         { tag_name: selectedSpecies, email: userEmail }
       ]);
       setSuccess(
-        `Subscribed to ${selectedSpecies}. Please check your email for the AWS SNS confirmation message!`
+        `Subscribed to ${selectedSpecies}. Check your email for the AWS SNS confirmation!`
       );
       setSelectedSpecies("");
     } catch (err) {
@@ -64,7 +58,6 @@ function SubscribePage({ user }) {
 
   async function handleUnsubscribe(tagName) {
     try {
-      console.log("Unsubscribing from:", tagName);
       await unsubscribe(userId, tagName);
       setSubscriptions((prev) => prev.filter((s) => s.tag_name !== tagName));
       setSuccess(`Unsubscribed from ${tagName}`);
@@ -79,112 +72,85 @@ function SubscribePage({ user }) {
   );
 
   return (
-    <div className="page">
-      <h1>Tag Notifications</h1>
+    <div className="sub-page">
+      <Navbar user={user} />
 
-      {/* Subscribe form */}
-      <div className="card">
-        <h2 style={{ fontSize: "1.2rem", marginBottom: "1rem" }}>
-          Subscribe to Species Alerts
-        </h2>
-        <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
-          Get notified via email when a subscribed species is detected in a new
-          upload.
-        </p>
+      <div className="sub-body">
+        {/* ── Decorative quokka — z-index 0, behind cards ── */}
+        <img src="/images/quokka_1.PNG" alt="" className="sub-deco-quokka" />
 
-        <form
-          onSubmit={handleSubscribe}
-          style={{ display: "flex", gap: "0.5rem", alignItems: "end" }}
-        >
-          <div style={{ flex: 1 }}>
-            <label>Species</label>
-            <select
-              value={selectedSpecies}
-              onChange={(e) => setSelectedSpecies(e.target.value)}
-            >
-              <option value="">Select species to subscribe...</option>
-              {availableSpecies.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            className="btn btn-primary"
-            disabled={loading || !selectedSpecies}
-          >
-            {loading ? "..." : "Subscribe"}
-          </button>
-        </form>
+        <h1 className="sub-title">Tag Notifications</h1>
 
-        {error && (
-          <div className="error-msg" style={{ marginTop: "1rem" }}>
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="success-msg" style={{ marginTop: "1rem" }}>
-            {success}
-          </div>
-        )}
-      </div>
-
-      {/* Current subscriptions */}
-      <div className="card">
-        <h2 style={{ fontSize: "1.2rem", marginBottom: "1rem" }}>
-          Your Subscriptions ({subscriptions.length})
-        </h2>
-
-        {subscriptions.length === 0 ? (
-          <p style={{ color: "var(--text-secondary)" }}>
-            No active subscriptions. Subscribe to a species above to receive
-            alerts.
+        {/* ── Card 1: Subscribe form ── */}
+        <div className="sub-card">
+          <h2 className="sub-card-title">Subscribe to Species Alerts</h2>
+          <p className="sub-card-desc">
+            Get notified via email when a subscribed species is detected in a
+            new upload.
           </p>
-        ) : (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-          >
-            {subscriptions.map((sub) => {
-              const speciesInfo = SPECIES_LIST.find(
-                (s) => s.value === sub.tag_name
-              );
-              return (
-                <div
-                  key={sub.tag_name}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "0.8rem",
-                    background: "var(--bg)",
-                    borderRadius: "var(--radius)",
-                    border: "1px solid var(--border)"
-                  }}
-                >
-                  <div>
-                    <strong>{speciesInfo?.label || sub.tag_name}</strong>
-                    <div
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "var(--text-secondary)"
-                      }}
-                    >
-                      {sub.tag_name}
+
+          <form onSubmit={handleSubscribe} className="sub-form">
+            <div className="sub-field">
+              <label>Species</label>
+              <select
+                value={selectedSpecies}
+                onChange={(e) => setSelectedSpecies(e.target.value)}
+              >
+                <option value="">Select species to subscribe...</option>
+                {availableSpecies.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              className="sub-btn-primary"
+              disabled={loading || !selectedSpecies}
+            >
+              {loading ? "..." : "Subscribe"}
+            </button>
+          </form>
+
+          {error && <div className="sub-error">{error}</div>}
+          {success && <div className="sub-success">{success}</div>}
+        </div>
+
+        {/* ── Card 2: Current subscriptions ── */}
+        <div className="sub-card">
+          <h2 className="sub-card-title">
+            Your Subscriptions ({subscriptions.length})
+          </h2>
+
+          {subscriptions.length === 0 ? (
+            <p className="sub-empty">
+              No active subscriptions. Subscribe to a species above to receive
+              alerts.
+            </p>
+          ) : (
+            <div className="sub-list">
+              {subscriptions.map((sub) => {
+                const info = SPECIES_LIST.find((s) => s.value === sub.tag_name);
+                return (
+                  <div key={sub.tag_name} className="sub-item">
+                    <div>
+                      <div className="sub-item-name">
+                        {info?.label || sub.tag_name}
+                      </div>
+                      <div className="sub-item-id">{sub.tag_name}</div>
                     </div>
+                    <button
+                      className="sub-btn-unsub"
+                      onClick={() => handleUnsubscribe(sub.tag_name)}
+                    >
+                      Unsubscribe
+                    </button>
                   </div>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => handleUnsubscribe(sub.tag_name)}
-                    style={{ color: "var(--error)" }}
-                  >
-                    Unsubscribe
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

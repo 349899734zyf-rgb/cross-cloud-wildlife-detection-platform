@@ -1,0 +1,59 @@
+.app-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 36px;
+  height: 64px;
+  background: #faf7f0;
+  border-bottom: 1px solid #d4c9b0;
+  font-family: "American Typewriter", "Courier New", monospace;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-nav-logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2a1f0e;
+  cursor: pointer;
+  user-select: none;
+}
+
+.app-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.app-nav-link {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 16px;
+  color: #2a1f0e;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.app-nav-link:hover {
+  color: #3a6b2a;
+}
+.app-nav-link.active {
+  color: #3a6b2a;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.app-nav-logout {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 15px;
+  color: #faf7f0;
+  background: #3a6b2a;
+  border: 1.5px solid #3a6b2a;
+  padding: 5px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.app-nav-logout:hover {
+  background: #2d5421;
+  border-color: #2d5421;
+}
