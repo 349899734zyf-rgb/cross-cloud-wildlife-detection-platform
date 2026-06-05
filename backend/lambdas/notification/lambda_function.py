@@ -1,12 +1,10 @@
 """
 Notification Lambda — GCP Proxy
 
-Receives ML tagging notification from ml_tagger, then forwards
-to GCP Cloud Run notification service which handles Firestore
-subscription lookup and SendGrid email delivery.
-
-Subscription management (subscribe/unsubscribe/list) is handled
-directly by the GCP Cloud Run service from the frontend.
+Receives {file_url, tags} from ml_tagger,
+forwards to GCP Cloud Run /notify which:
+  1. Queries GCP Firestore for subscribers of each species
+  2. Sends email via SendGrid to each subscriber
 """
 
 import json
@@ -19,26 +17,14 @@ GCP_NOTIFY_URL = os.environ.get(
     "https://aws-cognito-authenticator-524389055136.us-central1.run.app/notify"
 )
 
-CORS = {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-}
+CORS = {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
 
 
 def build_response(status_code, body):
-    return {
-        "statusCode": status_code,
-        "headers": CORS,
-        "body": json.dumps(body),
-    }
+    return {"statusCode": status_code, "headers": CORS, "body": json.dumps(body)}
 
 
-def lambda_handler(event, context):
-    """
-    Called by ml_tagger after species detection.
-    Payload: {"file_url": "...", "user_id": "...", "tags": {"species": count}}
-    Forwards to GCP /notify which handles Firestore + SendGrid.
-    """
+def lambda_handler(event, _context):
     try:
         body = {}
         if isinstance(event, dict):
@@ -55,7 +41,6 @@ def lambda_handler(event, context):
             body.get("action") == "notify" or
             ("tags" in body and "file_url" in body and not event.get("httpMethod"))
         )
-
         if not is_notify:
             return build_response(400, {"error": "Not a notification request"})
 
@@ -65,6 +50,7 @@ def lambda_handler(event, context):
         if not tags:
             return build_response(200, {"notified": 0})
 
+        # Forward to GCP Cloud Run → Firestore lookup → SendGrid email
         payload = json.dumps({"file_url": file_url, "tags": tags}).encode("utf-8")
         req = urllib.request.Request(
             GCP_NOTIFY_URL,
@@ -73,15 +59,14 @@ def lambda_handler(event, context):
             method="POST",
         )
 
-        try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                result = json.loads(resp.read().decode())
-                print(f"GCP notified: {result}")
-                return build_response(200, result)
-        except urllib.error.URLError as e:
-            print(f"GCP notify failed: {e}")
-            return build_response(200, {"notified": 0, "error": str(e)})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            result = json.loads(resp.read().decode())
+            print(f"GCP notified: {result}")
+            return build_response(200, result)
 
+    except urllib.error.URLError as e:
+        print(f"GCP notify failed: {e}")
+        return build_response(200, {"notified": 0, "error": str(e)})
     except Exception as e:
         print(f"Error: {e}")
         return build_response(500, {"error": str(e)})

@@ -169,10 +169,20 @@ def handle_request(request):
     path = request.path.rstrip("/")
     method = request.method
 
-    # ── POST /notify — internal call from AWS ml_tagger (no auth required) ──
+    # ── GET /subscribers — internal, called by AWS notification Lambda ──────
+    # Returns subscriber emails for a given tag (no auth, internal only)
+    if path.endswith("/subscribers") and method == "GET":
+        tag = request.args.get("tag", "")
+        if not tag:
+            return json_response(400, {"error": "tag parameter required"})
+        subs = get_subscribers_for_tag(tag)
+        emails = [s["email"] for s in subs if s.get("email")]
+        return json_response(200, {"emails": emails, "count": len(emails)})
+
+    # ── POST /notify — called by AWS notification Lambda (no auth required) ──
     if path.endswith("/notify") and method == "POST":
         data = request.get_json(silent=True) or {}
-        tags = data.get("tags", {})        # {"Felis_catus": 2, ...}
+        tags = data.get("tags", {})
         file_url = data.get("file_url", "")
         total = 0
         for tag_name in tags.keys():
