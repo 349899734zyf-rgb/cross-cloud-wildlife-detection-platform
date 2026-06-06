@@ -1,29 +1,17 @@
 import { useState } from "react";
 import { SPECIES_LIST } from "../utils/species";
 import { addTags, removeTags } from "../services/api";
+import Navbar from "../components/Navbar";
+import "./TagManagePage.css";
 
-function TagManagePage() {
-  const [fileUrls, setFileUrls] = useState([""]);
+function TagManagePage({ user }) {
+  const [fileUrl, setFileUrl] = useState("");
   const [action, setAction] = useState("add");
   const [tagEntries, setTagEntries] = useState([{ species: "", count: 1 }]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  // --- URL list management ---
-  function addUrlField() {
-    setFileUrls([...fileUrls, ""]);
-  }
-  function removeUrlField(index) {
-    setFileUrls(fileUrls.filter((_, i) => i !== index));
-  }
-  function updateUrl(index, value) {
-    const updated = [...fileUrls];
-    updated[index] = value;
-    setFileUrls(updated);
-  }
-
-  // --- Tag entries management ---
   function addEntry() {
     setTagEntries([...tagEntries, { species: "", count: 1 }]);
   }
@@ -41,30 +29,24 @@ function TagManagePage() {
     setLoading(true);
     setError("");
     setResult(null);
-
     try {
-      const urls = fileUrls.map(u => u.trim()).filter(Boolean);
-      if (urls.length === 0) {
-        setError("At least one file URL is required");
-        setLoading(false);
-        return;
-      }
-
       const tags = {};
       tagEntries.forEach((entry) => {
         if (entry.species) tags[entry.species] = parseInt(entry.count) || 1;
       });
-      if (Object.keys(tags).length === 0) {
-        setError("At least one tag is required");
+      if (!fileUrl || Object.keys(tags).length === 0) {
+        setError("File URL and at least one tag are required");
         setLoading(false);
         return;
       }
-
-      const res = action === "add"
-        ? await addTags(urls, tags)
-        : await removeTags(urls, tags);
-
-      setResult(res);
+      const res =
+        action === "add"
+          ? await addTags(fileUrl, tags)
+          : await removeTags(fileUrl, tags);
+      setResult({
+        message: `Tags ${action}ed successfully`,
+        tags: res.tags || tags
+      });
     } catch (err) {
       setError(err.message || "Operation failed");
     } finally {
@@ -73,109 +55,119 @@ function TagManagePage() {
   }
 
   return (
-    <div className="page">
-      <h1>Manage Tags</h1>
+    <div className="tm-page">
+      <Navbar user={user} />
 
-      <div className="card">
-        {/* Action selector */}
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
-          {["add", "remove"].map((a) => (
+      <div className="tm-body">
+        {/* ── Decorative kangaroo — behind card ── */}
+        <img src="/images/kangaroo_3.PNG" alt="" className="tm-deco-kangaroo" />
+
+        <h1 className="tm-title">Manage Tags</h1>
+
+        <div className="tm-card">
+          {/* Action tabs */}
+          <div className="tm-tabs">
             <button
-              key={a}
-              className={`btn ${action === a ? "btn-primary" : "btn-secondary"}`}
-              onClick={() => setAction(a)}
+              className={"tm-tab" + (action === "add" ? " tm-tab-active" : "")}
+              onClick={() => setAction("add")}
             >
-              {a === "add" ? "Add Tags" : "Remove Tags"}
+              Add Tags
             </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          {/* File URLs */}
-          <div className="form-group">
-            <label>File URLs <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>(supports multiple files)</span></label>
-            {fileUrls.map((url, index) => (
-              <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.4rem" }}>
-                <input
-                  type="url"
-                  value={url}
-                  onChange={(e) => updateUrl(index, e.target.value)}
-                  placeholder="https://ecolens-uploads-....s3.amazonaws.com/..."
-                  style={{ flex: 1 }}
-                />
-                {fileUrls.length > 1 && (
-                  <button type="button" className="btn btn-secondary" onClick={() => removeUrlField(index)}>✕</button>
-                )}
-              </div>
-            ))}
-            <button type="button" className="btn btn-secondary" onClick={addUrlField} style={{ marginTop: "0.3rem" }}>
-              + Add Another File
+            <button
+              className={
+                "tm-tab" + (action === "remove" ? " tm-tab-active" : "")
+              }
+              onClick={() => setAction("remove")}
+            >
+              Remove Tags
             </button>
           </div>
 
-          {/* Tag entries */}
-          <div style={{ marginTop: "1rem" }}>
-            <label>Tags to {action}</label>
-            {tagEntries.map((entry, index) => (
-              <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", alignItems: "end" }}>
-                <div style={{ flex: 2 }}>
-                  <select
-                    value={entry.species}
-                    onChange={(e) => updateEntry(index, "species", e.target.value)}
-                  >
-                    <option value="">Select species...</option>
-                    {SPECIES_LIST.map((s) => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="number"
-                    min="1"
-                    value={entry.count}
-                    onChange={(e) => updateEntry(index, "count", e.target.value)}
-                  />
-                </div>
-                {tagEntries.length > 1 && (
-                  <button type="button" className="btn btn-secondary" onClick={() => removeEntry(index)}>✕</button>
-                )}
-              </div>
-            ))}
-            <button type="button" className="btn btn-secondary" onClick={addEntry} style={{ marginTop: "0.5rem" }}>
-              + Add Another Tag
-            </button>
-          </div>
+          <form onSubmit={handleSubmit} className="tm-form">
+            {/* File URL */}
+            <div className="tm-field">
+              <label>File URL</label>
+              <input
+                type="url"
+                value={fileUrl}
+                onChange={(e) => setFileUrl(e.target.value)}
+                placeholder="https://ecolens-uploads-....s3.amazonaws.com/..."
+                required
+              />
+            </div>
 
-          {error && <div className="error-msg">{error}</div>}
-
-          <button className="btn btn-primary" style={{ marginTop: "1rem" }} disabled={loading}>
-            {loading ? "Processing..." : `${action === "add" ? "Add" : "Remove"} Tags`}
-          </button>
-        </form>
-
-        {result && (
-          <div className="success-msg" style={{ marginTop: "1rem" }}>
-            <div>{result.message}</div>
-            {result.updated && result.updated.length > 0 && (
-              <div style={{ marginTop: "0.5rem" }}>
-                {result.updated.map((item, i) => (
-                  <div key={i} style={{ fontSize: "0.85rem", marginTop: "0.3rem" }}>
-                    <span style={{ wordBreak: "break-all" }}>✅ {item.file_url.split("/").pop()}</span>
-                    <pre style={{ background: "rgba(0,0,0,0.05)", padding: "0.3rem 0.5rem", borderRadius: "3px", marginTop: "0.2rem" }}>
-                      {JSON.stringify(item.tags, null, 2)}
-                    </pre>
+            {/* Tag entries */}
+            <div className="tm-field" style={{ marginTop: "16px" }}>
+              <label>Tags to {action}</label>
+              <div className="tm-tag-entries">
+                {tagEntries.map((entry, index) => (
+                  <div key={index} className="tm-tag-row">
+                    <div className="tm-field" style={{ flex: 2 }}>
+                      <select
+                        value={entry.species}
+                        onChange={(e) =>
+                          updateEntry(index, "species", e.target.value)
+                        }
+                      >
+                        <option value="">Select species...</option>
+                        {SPECIES_LIST.map((s) => (
+                          <option key={s.value} value={s.value}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="tm-field" style={{ flex: 1 }}>
+                      <input
+                        type="number"
+                        min="1"
+                        value={entry.count}
+                        onChange={(e) =>
+                          updateEntry(index, "count", e.target.value)
+                        }
+                      />
+                    </div>
+                    {tagEntries.length > 1 && (
+                      <button
+                        type="button"
+                        className="tm-btn-remove"
+                        onClick={() => removeEntry(index)}
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
-            )}
-            {result.not_found && result.not_found.length > 0 && (
-              <div style={{ marginTop: "0.5rem", color: "var(--error)", fontSize: "0.85rem" }}>
-                Not found: {result.not_found.length} file(s)
-              </div>
-            )}
-          </div>
-        )}
+              <button
+                type="button"
+                className="tm-btn-secondary"
+                onClick={addEntry}
+              >
+                + Add Another Tag
+              </button>
+            </div>
+
+            {error && <div className="tm-error">{error}</div>}
+
+            <button className="tm-btn-primary" disabled={loading}>
+              {loading
+                ? "Processing..."
+                : action === "add"
+                  ? "Add Tags"
+                  : "Remove Tags"}
+            </button>
+          </form>
+
+          {result && (
+            <div className="tm-success">
+              <div>{result.message}</div>
+              <pre className="tm-result-pre">
+                {JSON.stringify(result.tags, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

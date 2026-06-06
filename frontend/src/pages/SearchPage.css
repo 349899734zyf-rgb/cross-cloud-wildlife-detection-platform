@@ -1,0 +1,285 @@
+/* ════════════════════════════════════════════
+   SearchPage.css
+   ════════════════════════════════════════════ */
+
+.sp-page {
+  min-height: 100vh;
+  background: #f2ebda;
+  font-family: "American Typewriter", "Courier New", monospace;
+}
+
+/* ── Body container ── */
+.sp-body {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 40px 60px;
+}
+
+/* ── Decorative koala (behind card) ── */
+.sp-deco-koala {
+  position: absolute;
+  top: -50px;
+  right: -130px;
+  height: 520px;
+  width: auto;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Title ── */
+.sp-title {
+  position: relative;
+  z-index: 1;
+  font-size: 34px;
+  font-weight: 700;
+  color: #2a1f0e;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* ── Search card (sits above koala) ── */
+.sp-card {
+  position: relative;
+  z-index: 1;
+  background: #faf7f0;
+  border: 1px solid #d4c9b0;
+  border-radius: 8px;
+  padding: 28px 32px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+/* ── Tabs ── */
+.sp-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.sp-tab {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 15px;
+  color: #2a1f0e;
+  background: #f2ebda;
+  border: 1.5px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 7px 18px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.sp-tab:hover {
+  border-color: #3a6b2a;
+  color: #3a6b2a;
+}
+.sp-tab-active {
+  background: #3a6b2a;
+  border-color: #3a6b2a;
+  color: #faf7f0;
+}
+
+/* ── Form ── */
+.sp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sp-tag-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sp-tag-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+/* Fields */
+.sp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sp-field label {
+  font-size: 13px;
+  color: #6b5b3e;
+}
+
+.sp-field input,
+.sp-field select {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 15px;
+  color: #2a1f0e;
+  background: #f2ebda;
+  border: 1px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 9px 12px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.sp-field input:focus,
+.sp-field select:focus {
+  border-color: #3a6b2a;
+}
+
+.sp-file-input {
+  padding: 8px 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Buttons */
+.sp-btn-primary {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 17px;
+  color: #faf7f0;
+  background: #3a6b2a;
+  border: none;
+  border-radius: 4px;
+  padding: 11px 36px;
+  cursor: pointer;
+  display: block;
+  margin: 20px auto 0;
+  transition: background 0.2s;
+}
+.sp-btn-primary:hover {
+  background: #2d5421;
+}
+.sp-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sp-btn-secondary {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 14px;
+  color: #2a1f0e;
+  background: #f2ebda;
+  border: 1px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: border-color 0.15s;
+}
+.sp-btn-secondary:hover {
+  border-color: #3a6b2a;
+}
+
+.sp-btn-remove {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 14px;
+  color: #6b5b3e;
+  background: transparent;
+  border: 1px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 7px 10px;
+  cursor: pointer;
+  align-self: flex-end;
+  flex-shrink: 0;
+}
+.sp-btn-remove:hover {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+/* Error */
+.sp-error {
+  font-size: 13px;
+  color: #c0392b;
+  background: #fde8e8;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 14px;
+}
+
+/* ── Results ── */
+.sp-results {
+  margin-top: 40px;
+}
+
+.sp-results-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2a1f0e;
+  margin-bottom: 6px;
+}
+
+.sp-results-hint {
+  font-size: 13px;
+  color: #6b5b3e;
+  margin-bottom: 18px;
+}
+
+.sp-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.sp-result-card {
+  background: #faf7f0;
+  border: 1px solid #d4c9b0;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.sp-thumb {
+  display: block;
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: 4px;
+  margin: 0 auto 12px;
+}
+
+.sp-filename {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2a1f0e;
+  word-break: break-all;
+  margin-bottom: 8px;
+}
+
+.sp-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.sp-chip {
+  background: #3a6b2a;
+  color: #faf7f0;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.sp-btn-delete {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 13px;
+  color: #c0392b;
+  background: transparent;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-top: 12px;
+  align-self: flex-end;
+  transition: background 0.15s;
+}
+.sp-btn-delete:hover {
+  background: #fde8e8;
+}

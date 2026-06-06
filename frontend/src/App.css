@@ -10,6 +10,13 @@
   --success: #22c55e;
   --error: #ef4444;
   --radius: 8px;
+  --cream: #f2ebda;
+  --cream-light: #faf7f0;
+  --forest-green: #3a6b2a;
+  --forest-dark: #2d5421;
+  --dark-brown: #2a1f0e;
+  --mid-brown: #6b5b3e;
+  --border-warm: #d4c9b0;
 }
 
 * {
@@ -19,7 +26,10 @@
 }
 
 body {
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -100,7 +110,9 @@ body {
 }
 
 /* Form Elements */
-input, select, textarea {
+input,
+select,
+textarea {
   width: 100%;
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--border);
@@ -109,7 +121,8 @@ input, select, textarea {
   margin-top: 0.3rem;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   outline: none;
   border-color: var(--primary);
 }

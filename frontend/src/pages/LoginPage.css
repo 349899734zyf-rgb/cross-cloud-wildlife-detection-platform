@@ -1,0 +1,240 @@
+/* ════════════════════════════════════════════
+   LoginPage.css
+   ════════════════════════════════════════════ */
+
+.lp-page {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: #f2ebda;
+  font-family: "American Typewriter", "Courier New", monospace;
+}
+
+/* ── Left panel ── */
+.lp-left {
+  position: relative;
+  flex: 58;
+  overflow: hidden;
+  background: #f2ebda;
+}
+
+.lp-map {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 130%;
+  height: auto;
+  mix-blend-mode: multiply;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* ── Animals ── */
+.lp-animal {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transform-origin: bottom center;
+}
+
+.lp-quokka {
+  bottom: 300px;
+  left: 12%;
+  height: 300px;
+  animation: lp-appear-sway 40s ease-in-out infinite 0s;
+}
+
+.lp-ibis {
+  bottom: 400px;
+  left: 42%;
+  height: 350px;
+  animation: lp-appear-sway 40s ease-in-out infinite -5s;
+}
+
+.lp-kangaroo {
+  bottom: -180px;
+  left: -30%;
+  height: 1300px;
+  animation: lp-appear-sway 40s ease-in-out infinite -10s;
+}
+
+.lp-koala {
+  top: 400px;
+  right: 20%;
+  height: 230px;
+  transform-origin: top center;
+  animation: lp-appear-sway 40s ease-in-out infinite -15s;
+}
+
+/* Keyframes — each animal slides in, holds, slides back out */
+@keyframes lp-appear-sway {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg);
+  }
+  5% {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+
+  12% {
+    transform: rotate(-4deg);
+  }
+  20% {
+    transform: rotate(4deg);
+  }
+  28% {
+    transform: rotate(-3deg);
+  }
+  33% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+
+  38% {
+    opacity: 0;
+    transform: rotate(0deg);
+  }
+
+  39%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-animal {
+    animation: none !important;
+  }
+}
+
+/* ── Divider ── */
+.lp-divider {
+  width: 1px;
+  flex-shrink: 0;
+  background: #d4c9b0;
+}
+
+/* ── Right panel ── */
+.lp-right {
+  flex: 42;
+  display: flex;
+  flex-direction: column;
+  background: #faf7f0;
+  padding: 36px 52px;
+  overflow-y: auto;
+}
+
+.lp-logo {
+  font-size: 32px;
+  font-weight: 600;
+  color: #2a1f0e;
+  margin-bottom: 0;
+}
+
+/* Form area takes remaining height and centers content */
+.lp-form-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 340px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.lp-mode-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #2a1f0e;
+  margin-bottom: 28px;
+}
+
+.lp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Fields */
+.lp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.lp-field label {
+  font-size: 13px;
+  color: #6b5b3e;
+}
+
+.lp-field input {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 15px;
+  color: #2a1f0e;
+  background: #f2ebda;
+  border: 1px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.lp-field input:focus {
+  border-color: #3a6b2a;
+}
+.lp-field input::placeholder {
+  color: #b8a898;
+}
+
+/* Button */
+.lp-btn {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 17px;
+  color: #faf7f0;
+  background: #3a6b2a;
+  border: none;
+  border-radius: 4px;
+  padding: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 4px;
+}
+.lp-btn:hover {
+  background: #2d5421;
+}
+.lp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Toggle link */
+.lp-toggle {
+  font-size: 14px;
+  color: #6b5b3e;
+  text-align: center;
+  margin-top: 2px;
+}
+.lp-toggle span {
+  color: #3a6b2a;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Error */
+.lp-error {
+  font-size: 13px;
+  color: #c0392b;
+  background: #fde8e8;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+/* Confirm message */
+.lp-confirm-msg {
+  font-size: 14px;
+  color: #6b5b3e;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}

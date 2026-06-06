@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { signIn, signUp, confirmSignUp, resendSignUpCode, getCurrentUser } from "../services/auth";
+import { useNavigate } from "react-router-dom";
+import { signIn, signUp, confirmSignUp } from "../services/auth";
+import "./LoginPage.css";
 
 function LoginPage({ onLogin }) {
-  const [mode, setMode] = useState("login"); // "login", "register", "confirm"
+  const navigate = useNavigate();
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [givenName, setGivenName] = useState("");
@@ -16,18 +19,9 @@ function LoginPage({ onLogin }) {
     setError("");
     setLoading(true);
     try {
-      const result = await signIn(email, password);
-      if (!result.isSignedIn) {
-        if (result.nextStep?.signInStep === "CONFIRM_SIGN_UP") {
-          setMode("confirm");
-          setError("Please verify your email first.");
-        } else {
-          setError("Sign-in incomplete. Please try again.");
-        }
-        return;
-      }
-      const user = await getCurrentUser();
+      const user = await signIn(email, password);
       onLogin(user);
+      navigate("/");
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {
@@ -43,27 +37,7 @@ function LoginPage({ onLogin }) {
       await signUp(email, password, givenName, familyName);
       setMode("confirm");
     } catch (err) {
-      // User registered before but never confirmed — go straight to confirm
-      if (err.name === "UsernameExistsException") {
-        await resendSignUpCode(email).catch(() => {});
-        setMode("confirm");
-        setError("Account already exists but is unverified. A new code has been sent.");
-      } else {
-        setError(err.message || "Registration failed");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResend() {
-    setError("");
-    setLoading(true);
-    try {
-      await resendSignUpCode(email);
-      setError("Verification code resent. Please check your email.");
-    } catch (err) {
-      setError(err.message || "Failed to resend code");
+      setError(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -83,124 +57,161 @@ function LoginPage({ onLogin }) {
     }
   }
 
+  const titles = {
+    login: "Log in",
+    register: "Create Account",
+    confirm: "Verify Email"
+  };
+
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h1>🌿 AussieEcoLens</h1>
-        <p>Wildlife Observation Platform</p>
+    <div className="lp-page">
+      {/* ── Left: map + animated animals ── */}
+      <div className="lp-left">
+        <img src="/images/map.PNG" alt="Australia" className="lp-map" />
+        <img
+          src="/images/quokka_1.PNG"
+          alt=""
+          className="lp-animal lp-quokka"
+        />
+        <img src="/images/ibis_1.PNG" alt="" className="lp-animal lp-ibis" />
+        <img
+          src="/images/kangaroo_2.PNG"
+          alt=""
+          className="lp-animal lp-kangaroo"
+        />
+        <img src="/images/koala_1.PNG" alt="" className="lp-animal lp-koala" />
+      </div>
 
-        {mode === "login" && (
-          <form onSubmit={handleLogin}>
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                required
-              />
-            </div>
-            {error && <div className="error-msg">{error}</div>}
-            <button className="btn btn-primary" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
-            <div className="toggle-link">
-              No account?{" "}
-              <span onClick={() => { setMode("register"); setError(""); }}>
-                Register
-              </span>
-            </div>
-          </form>
-        )}
+      {/* ── Divider ── */}
+      <div className="lp-divider" />
 
-        {mode === "register" && (
-          <form onSubmit={handleRegister}>
-            <div className="form-group">
-              <label>Given Name</label>
-              <input
-                type="text"
-                value={givenName}
-                onChange={(e) => setGivenName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Family Name</label>
-              <input
-                type="text"
-                value={familyName}
-                onChange={(e) => setFamilyName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min 8 chars, upper+lower+number+symbol"
-                required
-              />
-            </div>
-            {error && <div className="error-msg">{error}</div>}
-            <button className="btn btn-primary" disabled={loading}>
-              {loading ? "Registering..." : "Register"}
-            </button>
-            <div className="toggle-link">
-              Have an account?{" "}
-              <span onClick={() => { setMode("login"); setError(""); }}>
-                Sign In
-              </span>
-            </div>
-          </form>
-        )}
+      {/* ── Right: logo + form ── */}
+      <div className="lp-right">
+        <span className="lp-logo">AussieEcoLens</span>
 
-        {mode === "confirm" && (
-          <form onSubmit={handleConfirm}>
-            <p>Check your email for a verification code.</p>
-            <div className="form-group">
-              <label>Verification Code</label>
-              <input
-                type="text"
-                value={confirmCode}
-                onChange={(e) => setConfirmCode(e.target.value)}
-                placeholder="Enter 6-digit code"
-                required
-              />
-            </div>
-            {error && <div className="error-msg">{error}</div>}
-            <button className="btn btn-primary" disabled={loading}>
-              {loading ? "Confirming..." : "Confirm"}
-            </button>
-            <div className="toggle-link" style={{ marginTop: "0.75rem" }}>
-              Didn't receive it?{" "}
-              <span onClick={handleResend} style={{ cursor: "pointer" }}>
-                Resend code
-              </span>
-            </div>
-          </form>
-        )}
+        <div className="lp-form-area">
+          <h2 className="lp-mode-title">{titles[mode]}</h2>
+
+          {/* LOGIN */}
+          {mode === "login" && (
+            <form onSubmit={handleLogin} className="lp-form">
+              <div className="lp-field">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                />
+              </div>
+              <div className="lp-field">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  required
+                />
+              </div>
+              {error && <div className="lp-error">{error}</div>}
+              <button className="lp-btn" disabled={loading}>
+                {loading ? "Signing in…" : "Sign In"}
+              </button>
+              <p className="lp-toggle">
+                No account?{" "}
+                <span
+                  onClick={() => {
+                    setMode("register");
+                    setError("");
+                  }}
+                >
+                  Create account
+                </span>
+              </p>
+            </form>
+          )}
+
+          {/* REGISTER */}
+          {mode === "register" && (
+            <form onSubmit={handleRegister} className="lp-form">
+              <div className="lp-field">
+                <label>Given Name</label>
+                <input
+                  type="text"
+                  value={givenName}
+                  onChange={(e) => setGivenName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="lp-field">
+                <label>Family Name</label>
+                <input
+                  type="text"
+                  value={familyName}
+                  onChange={(e) => setFamilyName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="lp-field">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="lp-field">
+                <label>Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min 8 chars, upper+lower+number+symbol"
+                  required
+                />
+              </div>
+              {error && <div className="lp-error">{error}</div>}
+              <button className="lp-btn" disabled={loading}>
+                {loading ? "Registering…" : "Register"}
+              </button>
+              <p className="lp-toggle">
+                Already have one?{" "}
+                <span
+                  onClick={() => {
+                    setMode("login");
+                    setError("");
+                  }}
+                >
+                  Sign In
+                </span>
+              </p>
+            </form>
+          )}
+
+          {/* CONFIRM */}
+          {mode === "confirm" && (
+            <form onSubmit={handleConfirm} className="lp-form">
+              <p className="lp-confirm-msg">
+                Check your email for a verification code.
+              </p>
+              <div className="lp-field">
+                <label>Verification Code</label>
+                <input
+                  type="text"
+                  value={confirmCode}
+                  onChange={(e) => setConfirmCode(e.target.value)}
+                  placeholder="Enter 6-digit code"
+                  required
+                />
+              </div>
+              {error && <div className="lp-error">{error}</div>}
+              <button className="lp-btn" disabled={loading}>
+                {loading ? "Confirming…" : "Confirm"}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

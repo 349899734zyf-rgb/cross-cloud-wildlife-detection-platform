@@ -1,0 +1,193 @@
+/* ════════════════════════════════════════════
+   SubscribePage.css
+   ════════════════════════════════════════════ */
+
+.sub-page {
+  min-height: 100vh;
+  background: #f2ebda;
+  font-family: "American Typewriter", "Courier New", monospace;
+}
+
+/* ── Body ── */
+.sub-body {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 40px 60px;
+}
+
+/* ── Decorative quokka ── */
+.sub-deco-quokka {
+  position: absolute;
+  top: -75px;
+  right: 213px;
+  height: 300px;
+  width: auto;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Title ── */
+.sub-title {
+  position: relative;
+  z-index: 1;
+  font-size: 34px;
+  font-weight: 700;
+  color: #2a1f0e;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* ── Cards ── */
+.sub-card {
+  position: relative;
+  z-index: 1;
+  background: #faf7f0;
+  border: 1px solid #d4c9b0;
+  border-radius: 8px;
+  padding: 28px 32px;
+  max-width: 780px;
+  margin: 0 auto 20px;
+}
+
+.sub-card-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2a1f0e;
+  margin-bottom: 10px;
+}
+
+.sub-card-desc {
+  font-size: 14px;
+  color: #6b5b3e;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* ── Subscribe form ── */
+.sub-form {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.sub-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sub-field label {
+  font-size: 13px;
+  color: #6b5b3e;
+}
+
+.sub-field select {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 15px;
+  color: #2a1f0e;
+  background: #f2ebda;
+  border: 1px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.sub-field select:focus {
+  border-color: #3a6b2a;
+}
+
+/* ── Buttons ── */
+.sub-btn-primary {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 16px;
+  color: #faf7f0;
+  background: #3a6b2a;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 24px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.sub-btn-primary:hover {
+  background: #2d5421;
+}
+.sub-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Messages ── */
+.sub-error {
+  font-size: 13px;
+  color: #c0392b;
+  background: #fde8e8;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 14px;
+}
+
+.sub-success {
+  font-size: 13px;
+  color: #3a6b2a;
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 14px;
+  line-height: 1.5;
+}
+
+/* ── Subscriptions list ── */
+.sub-empty {
+  font-size: 14px;
+  color: #6b5b3e;
+}
+
+.sub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sub-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f2ebda;
+  border: 1px solid #d4c9b0;
+  border-radius: 6px;
+}
+
+.sub-item-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2a1f0e;
+  margin-bottom: 2px;
+}
+
+.sub-item-id {
+  font-size: 12px;
+  color: #6b5b3e;
+}
+
+.sub-btn-unsub {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 13px;
+  color: #c0392b;
+  background: transparent;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.sub-btn-unsub:hover {
+  background: #fde8e8;
+}

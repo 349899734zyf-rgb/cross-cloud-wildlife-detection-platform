@@ -1,0 +1,219 @@
+/* ════════════════════════════════════════════
+   TagManagePage.css
+   ════════════════════════════════════════════ */
+
+.tm-page {
+  min-height: 100vh;
+  background: #f2ebda;
+  font-family: "American Typewriter", "Courier New", monospace;
+}
+
+/* ── Body ── */
+.tm-body {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 40px 60px;
+}
+
+/* ── Decorative kangaroo ── */
+.tm-deco-kangaroo {
+  position: absolute;
+  top: -215px;
+  right: 390px;
+  height: 600px;
+  width: auto;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Title ── */
+.tm-title {
+  position: relative;
+  z-index: 1;
+  font-size: 34px;
+  font-weight: 700;
+  color: #2a1f0e;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* ── Card ── */
+.tm-card {
+  position: relative;
+  z-index: 1;
+  background: #faf7f0;
+  border: 1px solid #d4c9b0;
+  border-radius: 8px;
+  padding: 28px 32px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+/* ── Tabs ── */
+.tm-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.tm-tab {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 15px;
+  color: #2a1f0e;
+  background: #f2ebda;
+  border: 1.5px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 7px 22px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.tm-tab:hover {
+  border-color: #3a6b2a;
+  color: #3a6b2a;
+}
+.tm-tab-active {
+  background: #3a6b2a;
+  border-color: #3a6b2a;
+  color: #faf7f0;
+}
+
+/* ── Form ── */
+.tm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tm-field label {
+  font-size: 13px;
+  color: #6b5b3e;
+  margin-bottom: 2px;
+}
+
+.tm-field input,
+.tm-field select {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 15px;
+  color: #2a1f0e;
+  background: #f2ebda;
+  border: 1px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 9px 12px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.tm-field input:focus,
+.tm-field select:focus {
+  border-color: #3a6b2a;
+}
+
+/* ── Tag rows ── */
+.tm-tag-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tm-tag-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+/* ── Buttons ── */
+.tm-btn-primary {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 17px;
+  color: #faf7f0;
+  background: #3a6b2a;
+  border: none;
+  border-radius: 4px;
+  padding: 11px 36px;
+  cursor: pointer;
+  display: block;
+  margin: 20px auto 0;
+  transition: background 0.2s;
+}
+.tm-btn-primary:hover {
+  background: #2d5421;
+}
+.tm-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tm-btn-secondary {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 14px;
+  color: #2a1f0e;
+  background: #f2ebda;
+  border: 1px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: border-color 0.15s;
+}
+.tm-btn-secondary:hover {
+  border-color: #3a6b2a;
+}
+
+.tm-btn-remove {
+  font-family: "American Typewriter", "Courier New", monospace;
+  font-size: 14px;
+  color: #6b5b3e;
+  background: transparent;
+  border: 1px solid #d4c9b0;
+  border-radius: 4px;
+  padding: 7px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+.tm-btn-remove:hover {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+/* ── Messages ── */
+.tm-error {
+  font-size: 13px;
+  color: #c0392b;
+  background: #fde8e8;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 14px;
+}
+
+.tm-success {
+  font-size: 13px;
+  color: #3a6b2a;
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-top: 16px;
+  line-height: 1.5;
+}
+
+.tm-result-pre {
+  margin-top: 8px;
+  font-size: 12px;
+  font-family: "Courier New", monospace;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+}

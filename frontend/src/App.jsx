@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
 import UploadPage from "./pages/UploadPage";
 import SearchPage from "./pages/SearchPage";
 import TagManagePage from "./pages/TagManagePage";
@@ -9,9 +10,7 @@ import { getCurrentUser, logout } from "./services/auth";
 import "./App.css";
 
 function ProtectedRoute({ children, user }) {
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
@@ -44,31 +43,21 @@ function App() {
     }
   }
 
-  if (loading) {
-    return <div className="loading">Loading...</div>;
-  }
+  if (loading) return <div className="loading">Loading...</div>;
 
   return (
     <BrowserRouter>
       <div className="app">
-        {user && (
-          <nav className="navbar">
-            <div className="nav-brand">AussieEcoLens</div>
-            <div className="nav-links">
-              <Link to="/upload">Upload</Link>
-              <Link to="/search">Search</Link>
-              <Link to="/tags">Tags</Link>
-              <Link to="/subscribe">Subscribe</Link>
-              <button onClick={handleLogout}>Logout</button>
-            </div>
-          </nav>
-        )}
         <Routes>
           <Route
             path="/"
+            element={<HomePage user={user} onLogout={handleLogout} />}
+          />
+          <Route
+            path="/login"
             element={
               user ? (
-                <Navigate to="/upload" replace />
+                <Navigate to="/" replace />
               ) : (
                 <LoginPage onLogin={setUser} />
               )
