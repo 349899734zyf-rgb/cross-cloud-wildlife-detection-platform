@@ -1,0 +1,6 @@
+functions-framework==3.*
+PyJWT[crypto]==2.8.0
+cryptography==42.0.5
+requests==2.31.0
+google-cloud-firestore==2.19.0
+sendgrid==6.11.0

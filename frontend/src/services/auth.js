@@ -10,6 +10,7 @@ import {
   signIn as amplifySignIn,
   signUp as amplifySignUp,
   confirmSignUp as amplifyConfirmSignUp,
+  resendSignUpCode as amplifyResendSignUpCode,
   getCurrentUser as amplifyGetCurrentUser,
   signOut as amplifySignOut,
   fetchAuthSession,
@@ -54,6 +55,11 @@ export async function confirmSignUp(email, code) {
     username: email,
     confirmationCode: code,
   });
+  return result;
+}
+
+export async function resendSignUpCode(email) {
+  const result = await amplifyResendSignUpCode({ username: email });
   return result;
 }
 
