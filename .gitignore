@@ -37,3 +37,4 @@ credentials.json
 # Firebase (using Cloud Run instead)
 frontend/firebase.json
 .firebaserc
+frontend/.vite/
