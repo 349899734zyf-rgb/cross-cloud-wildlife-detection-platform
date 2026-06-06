@@ -49,13 +49,20 @@ function App() {
     <BrowserRouter>
       <div className="app">
         <Routes>
-          {/* Home — always accessible, navbar adapts to auth state */}
           <Route
             path="/"
             element={<HomePage user={user} onLogout={handleLogout} />}
           />
-          <Route path="/login" element={<LoginPage onLogin={setUser} />} />
-
+          <Route
+            path="/login"
+            element={
+              user ? (
+                <Navigate to="/" replace />
+              ) : (
+                <LoginPage onLogin={setUser} />
+              )
+            }
+          />
           <Route
             path="/upload"
             element={

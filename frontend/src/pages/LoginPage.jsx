@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { signIn, signUp, confirmSignUp } from "../services/auth";
 import "./LoginPage.css";
 
 function LoginPage({ onLogin }) {
+  const navigate = useNavigate();
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,6 +21,7 @@ function LoginPage({ onLogin }) {
     try {
       const user = await signIn(email, password);
       onLogin(user);
+      navigate("/");
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {
