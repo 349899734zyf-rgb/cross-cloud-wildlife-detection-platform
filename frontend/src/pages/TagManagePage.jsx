@@ -43,10 +43,15 @@ function TagManagePage({ user }) {
         action === "add"
           ? await addTags(fileUrl, tags)
           : await removeTags(fileUrl, tags);
-      setResult({
-        message: `Tags ${action}ed successfully`,
-        tags: res.tags || tags
-      });
+      if (res.not_found && res.not_found.length > 0) {
+        setError(`File URL not found in database. Make sure you're using the upload URL (ecolens-uploads-...), not the thumbnail URL.`);
+      } else {
+        const updated = res.updated?.[0];
+        setResult({
+          message: res.message || `Tags ${action}ed successfully`,
+          tags: updated?.tags || tags
+        });
+      }
     } catch (err) {
       setError(err.message || "Operation failed");
     } finally {
@@ -112,7 +117,7 @@ function TagManagePage({ user }) {
                         <option value="">Select species...</option>
                         {SPECIES_LIST.map((s) => (
                           <option key={s.value} value={s.value}>
-                            {s.label}
+                            {s.value}
                           </option>
                         ))}
                       </select>

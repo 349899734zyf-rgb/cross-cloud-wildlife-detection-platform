@@ -205,8 +205,8 @@ def lambda_handler(event, _context):
             detections = detect_animals(image, detector)
 
             if not detections:
-                tags = {}
-                print("No animals detected")
+                tags = {"unknown": 1}
+                print("No animals detected, tagging as unknown")
             else:
                 # Stage 2: Classify species
                 tags = crop_and_classify(image, detections, classifier)
@@ -221,6 +221,36 @@ def lambda_handler(event, _context):
             )
 
             print(f"Tags updated: {tags}")
+
+            # If this is a video frame with real species, propagate tags to parent video
+            if "_frame_" in key and any(s != "unknown" for s in tags.keys()):
+                try:
+                    base_key = key[:key.rfind("_frame_")]
+                    base_url_prefix = f"https://{bucket}.s3.amazonaws.com/{base_key}"
+                    scan_resp = table.scan(
+                        FilterExpression="begins_with(file_url, :prefix) AND file_type = :vtype",
+                        ExpressionAttributeValues={
+                            ":prefix": base_url_prefix,
+                            ":vtype": "video"
+                        }
+                    )
+                    for video_item in scan_resp.get("Items", []):
+                        video_url = video_item["file_url"]
+                        current_video_tags = {k: int(v) for k, v in video_item.get("tags", {}).items()}
+                        current_video_tags.pop("unknown", None)
+                        for species, count in tags.items():
+                            if species != "unknown":
+                                current_video_tags[species] = current_video_tags.get(species, 0) + int(count)
+                        if not current_video_tags:
+                            current_video_tags = {"unknown": 1}
+                        table.update_item(
+                            Key={"file_url": video_url},
+                            UpdateExpression="SET tags = :t",
+                            ExpressionAttributeValues={":t": current_video_tags}
+                        )
+                        print(f"Propagated tags to parent video {video_url}: {current_video_tags}")
+                except Exception as e:
+                    print(f"Warning: could not propagate tags to parent video: {e}")
 
             # Invoke notification Lambda to send SNS alerts for detected species
             if tags:

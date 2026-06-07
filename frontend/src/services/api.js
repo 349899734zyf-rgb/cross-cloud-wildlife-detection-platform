@@ -83,12 +83,26 @@ export async function queryByThumbnail(thumbnailUrl) {
 
 export async function queryByFile(formData) {
   const token = await getAuthToken();
+  const file = formData.get("file");
+
+  const base64Content = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
   const response = await fetch(`${API_BASE_URL}/query/file`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
     },
-    body: formData
+    body: JSON.stringify({
+      file_name: file.name,
+      file_type: file.type,
+      file_content: base64Content
+    })
   });
 
   if (!response.ok) {

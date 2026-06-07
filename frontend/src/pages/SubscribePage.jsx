@@ -99,7 +99,7 @@ function SubscribePage({ user }) {
                 <option value="">Select species to subscribe...</option>
                 {availableSpecies.map((s) => (
                   <option key={s.value} value={s.value}>
-                    {s.label}
+                    {s.value}
                   </option>
                 ))}
               </select>
@@ -130,14 +130,10 @@ function SubscribePage({ user }) {
           ) : (
             <div className="sub-list">
               {subscriptions.map((sub) => {
-                const info = SPECIES_LIST.find((s) => s.value === sub.tag_name);
                 return (
                   <div key={sub.tag_name} className="sub-item">
                     <div>
-                      <div className="sub-item-name">
-                        {info?.label || sub.tag_name}
-                      </div>
-                      <div className="sub-item-id">{sub.tag_name}</div>
+                      <div className="sub-item-name">{sub.tag_name}</div>
                     </div>
                     <button
                       className="sub-btn-unsub"

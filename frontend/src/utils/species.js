@@ -3,6 +3,7 @@
  * Used for species dropdown/search in the frontend.
  */
 export const SPECIES_LIST = [
+  { value: "unknown", label: "Unknown" },
   { value: "Alectura_lathami", label: "Australian Brushturkey" },
   { value: "Antechinus_agilis", label: "Agile Antechinus" },
   { value: "Bos_taurus", label: "Cattle" },
