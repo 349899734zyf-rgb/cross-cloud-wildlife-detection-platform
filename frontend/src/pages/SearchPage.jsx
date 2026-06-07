@@ -129,7 +129,7 @@ function SearchPage({ user }) {
                         <option value="">Select species...</option>
                         {SPECIES_LIST.map((s) => (
                           <option key={s.value} value={s.value}>
-                            {s.label}
+                            {s.value}
                           </option>
                         ))}
                       </select>
