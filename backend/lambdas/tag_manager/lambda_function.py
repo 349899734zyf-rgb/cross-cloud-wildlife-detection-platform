@@ -62,6 +62,9 @@ def update_tags_for_url(table, file_url, tags, action):
     if action == "add":
         for species, count in tags.items():
             current_tags[species] = int(current_tags.get(species, 0)) + int(count)
+        # If adding real species tags, remove the unknown fallback
+        if any(s != "unknown" for s in tags.keys()):
+            current_tags.pop("unknown", None)
     else:  # remove
         for species in tags.keys():
             # Ignore tags not present — as per assignment spec
@@ -71,6 +74,9 @@ def update_tags_for_url(table, file_url, tags, action):
                     del current_tags[species]
                 else:
                     current_tags[species] = new_count
+        # If all tags removed, fall back to unknown so the file stays searchable
+        if not current_tags:
+            current_tags = {"unknown": 1}
 
     table.update_item(
         Key={"file_url": file_url},

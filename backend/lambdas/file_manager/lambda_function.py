@@ -65,7 +65,7 @@ def delete_single(table, file_url):
         except Exception as e:
             print(f"Warning: could not delete thumbnail {thumbnail_url}: {e}")
 
-    # Delete video frames from S3 if this is a video
+    # Delete video frames from S3 and DynamoDB if this is a video
     if item.get("file_type") == "video":
         try:
             base_key = file_url.split(f"{UPLOAD_BUCKET}.s3.amazonaws.com/")[1]
@@ -73,7 +73,10 @@ def delete_single(table, file_url):
             paginator = s3_client.get_paginator("list_objects_v2")
             for page in paginator.paginate(Bucket=UPLOAD_BUCKET, Prefix=prefix + "_frame_"):
                 for obj in page.get("Contents", []):
-                    s3_client.delete_object(Bucket=UPLOAD_BUCKET, Key=obj["Key"])
+                    frame_key = obj["Key"]
+                    s3_client.delete_object(Bucket=UPLOAD_BUCKET, Key=frame_key)
+                    frame_url = f"https://{UPLOAD_BUCKET}.s3.amazonaws.com/{frame_key}"
+                    table.delete_item(Key={"file_url": frame_url})
         except Exception as e:
             print(f"Warning: could not delete video frames: {e}")
 
